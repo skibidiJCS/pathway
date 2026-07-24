@@ -76,8 +76,9 @@ a:focus-visible {
 }
 
 .brand-mark {
-  width: 52px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   object-fit: contain;
 }
 
@@ -111,7 +112,15 @@ a:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
+.search-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
 .search-row {
+  flex: 1;
   display: flex;
   align-items: stretch;
   gap: 8px;
@@ -278,8 +287,7 @@ a:focus-visible {
   pointer-events: none;
 }
 
-.legend,
-.filters {
+.legend {
   border: 1px solid var(--line);
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.94);
@@ -326,7 +334,7 @@ a:focus-visible {
 }
 
 .filters {
-  padding: 7px 9px;
+  flex: 0 0 auto;
 }
 
 .filter-fields {
@@ -712,6 +720,16 @@ a:focus-visible {
 }
 
 @media (max-width: 860px) {
+  .search-controls {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .search-row {
+    min-width: min(100%, 500px);
+  }
+
   .workspace {
     display: block;
   }
@@ -764,6 +782,10 @@ a:focus-visible {
     gap: 6px;
   }
 
+  .filters {
+    width: 100%;
+  }
+
   .search-button {
     min-width: 78px;
     padding: 0 12px;
@@ -811,8 +833,7 @@ a:focus-visible {
     font-size: 9px;
   }
 
-  .legend,
-  .filters {
+  .legend {
     width: 100%;
   }
 

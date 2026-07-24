@@ -122,25 +122,69 @@ export function PathwayApp() {
       </header>
 
       <section className="search-region" aria-label="Paper search">
-        <form className="search-row" onSubmit={handleSearch}>
-          <div className="search-field">
-            <span className="search-icon" aria-hidden="true">
-              ⌕
-            </span>
-            <input
-              className="search-input"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by paper title or DOI"
-              aria-label="Paper title or DOI"
-              autoComplete="off"
-            />
-          </div>
-          <button className="search-button" type="submit" disabled={searching}>
-            {searching ? "Searching…" : "Search"}
-          </button>
-        </form>
+        <div className="search-controls">
+          <form className="search-row" onSubmit={handleSearch}>
+            <div className="search-field">
+              <span className="search-icon" aria-hidden="true">
+                ⌕
+              </span>
+              <input
+                className="search-input"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by paper title or DOI"
+                aria-label="Paper title or DOI"
+                autoComplete="off"
+              />
+            </div>
+            <button className="search-button" type="submit" disabled={searching}>
+              {searching ? "Searching…" : "Search"}
+            </button>
+          </form>
+
+          {graph ? (
+            <div className="filters" aria-label="Graph filters">
+              <div className="filter-fields">
+                <label className="filter-label">
+                  Year from
+                  <input
+                    className="filter-input"
+                    type="number"
+                    inputMode="numeric"
+                    min="1000"
+                    max="2100"
+                    value={minYear}
+                    onChange={(event) => setMinYear(event.target.value)}
+                    placeholder="Any"
+                  />
+                </label>
+                <label className="filter-label">
+                  Min. citations
+                  <input
+                    className="filter-input"
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={minCitations}
+                    onChange={(event) => setMinCitations(event.target.value)}
+                    placeholder="Any"
+                  />
+                </label>
+                <button
+                  className="clear-filters"
+                  type="button"
+                  onClick={() => {
+                    setMinYear("");
+                    setMinCitations("");
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
         <div
           className={`search-note${searchError ? " error-text" : ""}`}
           role={searchError ? "alert" : "status"}
@@ -185,60 +229,17 @@ export function PathwayApp() {
               </span>
               <span className="legend-item">
                 <span className="legend-dot reference" />
-                References · this paper cites
+                References
               </span>
               <span className="legend-item">
                 <span className="legend-dot citing" />
-                Citing papers · cite this paper
+                Citing papers
               </span>
               <span className="legend-item">
                 <span className="legend-dot both" />
                 Both
               </span>
-              <span className="legend-item">Arrow = cites</span>
             </div>
-
-            {graph ? (
-              <div className="filters" aria-label="Graph filters">
-                <div className="filter-fields">
-                  <label className="filter-label">
-                    Year from
-                    <input
-                      className="filter-input"
-                      type="number"
-                      inputMode="numeric"
-                      min="1000"
-                      max="2100"
-                      value={minYear}
-                      onChange={(event) => setMinYear(event.target.value)}
-                      placeholder="Any"
-                    />
-                  </label>
-                  <label className="filter-label">
-                    Min. citations
-                    <input
-                      className="filter-input"
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      value={minCitations}
-                      onChange={(event) => setMinCitations(event.target.value)}
-                      placeholder="Any"
-                    />
-                  </label>
-                  <button
-                    className="clear-filters"
-                    type="button"
-                    onClick={() => {
-                      setMinYear("");
-                      setMinCitations("");
-                    }}
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </div>
 
           {graphState === "idle" ? (
@@ -282,8 +283,8 @@ export function PathwayApp() {
                 onSelect={selectNode}
               />
               <div className="graph-footer">
-                Arrow = citing paper → cited paper · showing{" "}
-                {visibleNodes.length} of {graph.nodes.length} papers
+                Showing {visibleNodes.length} of {graph.nodes.length} papers ·
+                click a paper for details
               </div>
             </>
           ) : null}

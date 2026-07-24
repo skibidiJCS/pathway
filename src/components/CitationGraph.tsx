@@ -35,7 +35,6 @@ export function CitationGraph({
       const { default: cytoscape } = await import("cytoscape");
       if (cancelled || !containerRef.current) return;
 
-      const visibleIds = new Set(visibleNodes.map((paper) => paper.id));
       const references = visibleNodes.filter(
         (paper) => paper.relation === "reference" || paper.relation === "both",
       );
@@ -72,40 +71,27 @@ export function CitationGraph({
       placeGroup(references, "left");
       placeGroup(citing, "right");
 
-      const elements: ElementDefinition[] = [
-        ...visibleNodes.map((paper) => ({
-          data: {
-            id: paper.id,
-            label: shortLabel(paper.title),
-            relation: paper.relation,
-            citations: paper.citationCount,
-            paper,
-          },
-          position: positions.get(paper.id) ?? { x: 0, y: 0 },
-        })),
-        ...graph.edges
-          .filter(
-            (edge) =>
-              visibleIds.has(edge.source) && visibleIds.has(edge.target),
-          )
-          .map((edge) => ({
-            data: {
-              id: edge.id,
-              source: edge.source,
-              target: edge.target,
-              relation:
-                edge.source === graph.centerId ? "reference" : "citing",
-            },
-          })),
-      ];
+      const elements: ElementDefinition[] = visibleNodes.map((paper) => ({
+        data: {
+          id: paper.id,
+          label: shortLabel(paper.title),
+          relation: paper.relation,
+          citations: paper.citationCount,
+          paper,
+        },
+        position: positions.get(paper.id) ?? { x: 0, y: 0 },
+      }));
 
       cy = cytoscape({
         container: containerRef.current,
         elements,
         layout: { name: "preset", fit: true, padding: 110 },
-        minZoom: 0.38,
-        maxZoom: 2.1,
-        wheelSensitivity: 0.18,
+        minZoom: 0.35,
+        maxZoom: 1.15,
+        userZoomingEnabled: false,
+        userPanningEnabled: false,
+        boxSelectionEnabled: false,
+        autoungrabify: true,
         style: [
           {
             selector: "node",
@@ -168,32 +154,6 @@ export function CitationGraph({
               "border-color": "#18202b",
             },
           },
-          {
-            selector: "edge",
-            style: {
-              width: 1.6,
-              "line-color": "#a8b0ba",
-              "target-arrow-color": "#77818d",
-              "target-arrow-shape": "triangle",
-              "arrow-scale": 0.85,
-              "curve-style": "bezier",
-              opacity: 0.8,
-            },
-          },
-          {
-            selector: 'edge[relation = "reference"]',
-            style: {
-              "line-color": "#7d9fca",
-              "target-arrow-color": "#5683bf",
-            },
-          },
-          {
-            selector: 'edge[relation = "citing"]',
-            style: {
-              "line-color": "#d3a36a",
-              "target-arrow-color": "#c48235",
-            },
-          },
         ],
       });
 
@@ -236,7 +196,7 @@ export function CitationGraph({
         ref={containerRef}
         className="graph-container"
         role="img"
-        aria-label={`Citation graph with ${relationCount(visibleNodes, "reference")} references and ${relationCount(visibleNodes, "citing")} citing papers. Arrows point from the citing paper to the paper it references.`}
+        aria-label={`Citation map with ${relationCount(visibleNodes, "reference")} references that the selected paper cites and ${relationCount(visibleNodes, "citing")} papers that cite the selected paper.`}
       />
     </>
   );
