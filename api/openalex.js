@@ -16,6 +16,58 @@ const WORK_FIELDS = [
   "abstract_inverted_index",
 ].join(",");
 
+const ABSTRACT_SYMBOLS = {
+  alpha: "α",
+  beta: "β",
+  delta: "δ",
+  gamma: "γ",
+  infty: "∞",
+  lambda: "λ",
+  leq: "≤",
+  mu: "μ",
+  nu: "ν",
+  pm: "±",
+  sigma: "σ",
+  sim: "∼",
+  theta: "θ",
+  times: "×",
+  geq: "≥",
+};
+
+export function cleanAbstractText(value) {
+  let text = value
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&le;/gi, "≤")
+    .replace(/&ge;/gi, "≥")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\\rule\{[^{}]*\}\{[^{}]*\}/g, "")
+    .replace(/\\phantom\{[^{}]*\}/g, "")
+    .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "$1/$2");
+
+  for (let index = 0; index < 3; index += 1) {
+    text = text.replace(
+      /\\(?:ensuremath|emph|mathbb|mathcal|mathbf|mathrm|mathit|mathsf|mathtt|text|textbf|textit|textrm|operatorname)\{([^{}]*)\}/g,
+      "$1",
+    );
+  }
+
+  text = text.replace(/\\([a-zA-Z]+)\b/g, (match, name) => {
+    return ABSTRACT_SYMBOLS[name] ?? "";
+  });
+
+  return text
+    .replace(/\\[,;:!]/g, " ")
+    .replace(/([_^])\{([^{}]+)\}/g, "$1$2")
+    .replace(/[{}$]/g, "")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function sendJson(response, body, status = 200) {
   response.setHeader(
     "Cache-Control",
@@ -45,10 +97,11 @@ function reconstructAbstract(invertedIndex) {
   }
 
   if (words.length === 0) return null;
-  return words
+  const abstract = words
     .sort((a, b) => a[0] - b[0])
     .map(([, word]) => word)
     .join(" ");
+  return cleanAbstractText(abstract) || null;
 }
 
 function normalizeDoi(value) {

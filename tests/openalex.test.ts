@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildCitationGraph,
+  cleanAbstractText,
   deduplicatePapers,
   reconstructAbstract,
   toPaper,
@@ -56,6 +57,15 @@ test("converts OpenAlex metadata and reconstructs an abstract", () => {
 test("reconstructAbstract handles missing values", () => {
   assert.equal(reconstructAbstract(null), null);
   assert.equal(reconstructAbstract({}), null);
+});
+
+test("cleans common OpenAlex math markup from abstracts", () => {
+  assert.equal(
+    cleanAbstractText(
+      "For $\\ensuremath{\\gamma}&lt;1$, ${A}_{k}\\ensuremath{\\sim}{k}^{\\ensuremath{\\gamma}}$ and $\\ensuremath{\\nu}\\phantom{\\rule{0ex}{0ex}}=\\ensuremath{\\infty}$.",
+    ),
+    "For γ<1, A_k∼k^γ and ν=∞.",
+  );
 });
 
 test("deduplicates papers by OpenAlex ID and records both relations", () => {

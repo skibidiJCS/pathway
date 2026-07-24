@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import openAlexFunction from "../api/openalex.js";
+import openAlexFunction, {
+  cleanAbstractText,
+} from "../api/openalex.js";
+
+test("Vercel function cleans common math markup in abstracts", () => {
+  assert.equal(
+    cleanAbstractText(String.raw`Growth follows $\ensuremath{\gamma}&gt;1$.`),
+    "Growth follows γ>1.",
+  );
+});
 
 test("Vercel function returns JSON through the Node request-response contract", async () => {
   let status = 0;

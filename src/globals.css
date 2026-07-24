@@ -626,12 +626,12 @@ a:focus-visible {
   grid-area: selected;
   min-width: 0;
   width: 100%;
-  max-width: 900px;
+  max-width: none;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: baseline;
   align-self: start;
-  justify-self: center;
+  justify-self: start;
   gap: 12px;
 }
 

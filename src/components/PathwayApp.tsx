@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { loadCitationGraph, searchPapers } from "../api-client";
 import type {
   CitationGraphData,
@@ -37,6 +37,8 @@ export function PathwayApp() {
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
+  const searchRequestId = useRef(0);
+  const searchTimer = useRef<number | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -59,31 +61,78 @@ export function PathwayApp() {
     });
   }, [graph, minYear, minCitations]);
 
-  const handleSearch = async (event: FormEvent) => {
-    event.preventDefault();
-    const trimmed = query.trim();
-    if (trimmed.length < 3) {
-      setSearchError("Enter at least 3 characters.");
-      setResults([]);
-      return;
-    }
-
+  const runSearch = async (trimmed: string) => {
+    const requestId = ++searchRequestId.current;
     setSearching(true);
     setSearchError("");
+
     try {
       const response = await searchPapers(trimmed);
+      if (requestId !== searchRequestId.current) return;
       setResults(response.results.slice(0, SEARCH_RESULT_LIMIT));
     } catch (error) {
+      if (requestId !== searchRequestId.current) return;
       setResults([]);
       setSearchError(
         error instanceof Error ? error.message : "Search could not be completed.",
       );
     } finally {
-      setSearching(false);
+      if (requestId === searchRequestId.current) setSearching(false);
     }
   };
 
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (searchTimer.current !== null) {
+      window.clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
+    searchRequestId.current += 1;
+    setSearching(false);
+
+    if (trimmed.length < 3) {
+      setSearchError("");
+      setResults(null);
+      return undefined;
+    }
+
+    setSearchError("");
+    searchTimer.current = window.setTimeout(() => {
+      searchTimer.current = null;
+      void runSearch(trimmed);
+    }, 350);
+
+    return () => {
+      if (searchTimer.current !== null) {
+        window.clearTimeout(searchTimer.current);
+        searchTimer.current = null;
+      }
+    };
+  }, [query]);
+
+  const handleSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const trimmed = query.trim();
+    if (searchTimer.current !== null) {
+      window.clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
+    if (trimmed.length < 3) {
+      searchRequestId.current += 1;
+      setSearchError("Enter at least 3 characters.");
+      setResults([]);
+      return;
+    }
+    void runSearch(trimmed);
+  };
+
   const selectSearchResult = async (paper: Paper) => {
+    searchRequestId.current += 1;
+    setSearching(false);
+    if (searchTimer.current !== null) {
+      window.clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
     setResults(null);
     setGraphState("loading");
     setGraphError("");
