@@ -38,6 +38,7 @@ export function PathwayApp() {
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
   const searchRequestId = useRef(0);
+  const graphRequestId = useRef(0);
   const searchTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -127,6 +128,7 @@ export function PathwayApp() {
   };
 
   const selectSearchResult = async (paper: Paper) => {
+    const requestId = ++graphRequestId.current;
     searchRequestId.current += 1;
     setSearching(false);
     if (searchTimer.current !== null) {
@@ -144,12 +146,14 @@ export function PathwayApp() {
 
     try {
       const nextGraph = await loadCitationGraph(paper.id);
+      if (requestId !== graphRequestId.current) return;
       setGraph(nextGraph);
       setSelectedPaper(
         nextGraph.nodes.find((node) => node.id === nextGraph.centerId) ?? paper,
       );
       setGraphState("ready");
     } catch (error) {
+      if (requestId !== graphRequestId.current) return;
       setGraphError(
         error instanceof Error
           ? error.message
@@ -157,6 +161,26 @@ export function PathwayApp() {
       );
       setGraphState("error");
     }
+  };
+
+  const resetApp = () => {
+    searchRequestId.current += 1;
+    graphRequestId.current += 1;
+    if (searchTimer.current !== null) {
+      window.clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
+    setQuery("");
+    setSearching(false);
+    setResults(null);
+    setSearchError("");
+    setGraph(null);
+    setGraphState("idle");
+    setGraphError("");
+    setSelectedPaper(null);
+    setDetailsExpanded(false);
+    setMinYear("");
+    setMinCitations("");
   };
 
   const selectNode = (paper: Paper) => {
@@ -175,13 +199,19 @@ export function PathwayApp() {
   return (
     <main className="app-shell">
       <header className="site-header">
-        <div className="brand">
+        <button
+          className="brand"
+          type="button"
+          onClick={resetApp}
+          aria-label="Return to the Pathway homepage"
+          title="Return to homepage"
+        >
           <img
             className="brand-logo"
             src="/pathway-logo-full.png"
             alt="Pathway Research"
           />
-        </div>
+        </button>
         <div className="header-actions">
           <a
             className="source-link"
