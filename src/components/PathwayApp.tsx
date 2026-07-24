@@ -192,6 +192,24 @@ export function PathwayApp() {
             {searchError ||
               `Up to ${SEARCH_RESULT_LIMIT} results · each graph is limited to ${GRAPH_PAPER_LIMIT} papers`}
           </div>
+          <div className="legend" aria-label="Graph legend">
+            <span className="legend-item">
+              <span className="legend-dot selected" />
+              Selected paper
+            </span>
+            <span className="legend-item">
+              <span className="legend-dot reference" />
+              References
+            </span>
+            <span className="legend-item">
+              <span className="legend-dot citing" />
+              Citing papers
+            </span>
+            <span className="legend-item">
+              <span className="legend-dot both" />
+              Both
+            </span>
+          </div>
           {graph ? (
             <div className="filters" aria-label="Graph filters">
               <div className="filter-fields">
@@ -280,27 +298,6 @@ export function PathwayApp() {
         className={`workspace${detailsCollapsed ? " details-collapsed" : ""}`}
       >
         <div className="graph-stage">
-          <div className="graph-toolbar">
-            <div className="legend" aria-label="Graph legend">
-              <span className="legend-item">
-                <span className="legend-dot selected" />
-                Selected paper
-              </span>
-              <span className="legend-item">
-                <span className="legend-dot reference" />
-                References
-              </span>
-              <span className="legend-item">
-                <span className="legend-dot citing" />
-                Citing papers
-              </span>
-              <span className="legend-item">
-                <span className="legend-dot both" />
-                Both
-              </span>
-            </div>
-          </div>
-
           {graphState === "idle" ? (
             <div className="graph-state">
               <div className="state-mark" aria-hidden="true">
