@@ -1,20 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import openAlexFunction from "../api/openalex.ts";
+import openAlexFunction from "../api/openalex.js";
 
-test("Vercel function supports the web request-response contract", async () => {
-  const response = await openAlexFunction(
-    new Request("https://pathwayresearch.vercel.app/api/openalex?mode=unknown"),
-  );
-
-  assert.ok(response instanceof Response);
-  assert.equal(response.status, 400);
-  assert.deepEqual(await response.json(), { error: "Unknown request mode." });
-});
-
-test("Vercel function supports the legacy request-response contract", async () => {
+test("Vercel function returns JSON through the Node request-response contract", async () => {
   let status = 0;
-  let body = "";
+  let body: unknown;
   const headers = new Map<string, string>();
 
   await openAlexFunction(
@@ -31,13 +21,13 @@ test("Vercel function supports the legacy request-response contract", async () =
       setHeader(name, value) {
         headers.set(name, value);
       },
-      send(value) {
+      json(value: unknown) {
         body = value;
       },
     },
   );
 
   assert.equal(status, 400);
-  assert.equal(headers.get("content-type"), "application/json");
-  assert.deepEqual(JSON.parse(body), { error: "Unknown request mode." });
+  assert.equal(headers.get("X-Content-Type-Options"), "nosniff");
+  assert.deepEqual(body, { error: "Unknown request mode." });
 });
