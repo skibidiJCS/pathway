@@ -31,6 +31,9 @@ export interface OpenAlexWork {
 }
 
 const OPENALEX_PREFIX = "https://openalex.org/";
+const RELATION_LIMIT = 14;
+const DEFAULT_GRAPH_LIMIT = 29;
+const GRAPH_HARD_LIMIT = 30;
 
 export function normalizeOpenAlexId(value: string): string {
   const match = value.trim().match(/(?:https?:\/\/openalex\.org\/)?(W\d+)$/i);
@@ -128,17 +131,17 @@ export function buildCitationGraph(
   selected: Paper,
   references: Paper[],
   citingPapers: Paper[],
-  maxNodes = 25,
+  maxNodes = DEFAULT_GRAPH_LIMIT,
 ): CitationGraphData {
-  const hardLimit = Math.min(30, Math.max(1, maxNodes));
+  const hardLimit = Math.min(GRAPH_HARD_LIMIT, Math.max(1, maxNodes));
   const root = { ...selected, relation: "selected" as const };
   const candidates = [
     root,
-    ...references.slice(0, 12).map((paper) => ({
+    ...references.slice(0, RELATION_LIMIT).map((paper) => ({
       ...paper,
       relation: "reference" as const,
     })),
-    ...citingPapers.slice(0, 12).map((paper) => ({
+    ...citingPapers.slice(0, RELATION_LIMIT).map((paper) => ({
       ...paper,
       relation: "citing" as const,
     })),
@@ -156,10 +159,10 @@ export function buildCitationGraph(
     edges.push({ id, source, target });
   };
 
-  for (const paper of references.slice(0, 12)) {
+  for (const paper of references.slice(0, RELATION_LIMIT)) {
     addEdge(root.id, paper.id);
   }
-  for (const paper of citingPapers.slice(0, 12)) {
+  for (const paper of citingPapers.slice(0, RELATION_LIMIT)) {
     addEdge(paper.id, root.id);
   }
 

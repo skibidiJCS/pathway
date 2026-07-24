@@ -1,5 +1,8 @@
 const OPENALEX_API = "https://api.openalex.org";
 const OPENALEX_PREFIX = "https://openalex.org/";
+const SEARCH_LIMIT = 12;
+const RELATION_LIMIT = 14;
+const GRAPH_LIMIT = 29;
 const WORK_FIELDS = [
   "id",
   "doi",
@@ -108,9 +111,9 @@ function buildCitationGraph(selected, references, citingPapers) {
   const root = { ...selected, relation: "selected" };
   const nodes = deduplicatePapers([
     root,
-    ...references.slice(0, 12),
-    ...citingPapers.slice(0, 12),
-  ]).slice(0, 25);
+    ...references.slice(0, RELATION_LIMIT),
+    ...citingPapers.slice(0, RELATION_LIMIT),
+  ]).slice(0, GRAPH_LIMIT);
   const nodeIds = new Set(nodes.map((paper) => paper.id));
   const seenEdges = new Set();
   const edges = [];
@@ -123,8 +126,12 @@ function buildCitationGraph(selected, references, citingPapers) {
     edges.push({ id, source, target });
   };
 
-  for (const paper of references.slice(0, 12)) addEdge(root.id, paper.id);
-  for (const paper of citingPapers.slice(0, 12)) addEdge(paper.id, root.id);
+  for (const paper of references.slice(0, RELATION_LIMIT)) {
+    addEdge(root.id, paper.id);
+  }
+  for (const paper of citingPapers.slice(0, RELATION_LIMIT)) {
+    addEdge(paper.id, root.id);
+  }
 
   return { centerId: root.id, nodes, edges };
 }
@@ -179,14 +186,14 @@ async function searchWorks(query) {
 
   const data = await openAlexFetch("/works", {
     search: query,
-    per_page: "8",
+    per_page: String(SEARCH_LIMIT),
     select: WORK_FIELDS,
   });
   return {
     results: (data.results ?? [])
       .map((work) => toPaper(work, "selected"))
       .filter((paper) => paper.id)
-      .slice(0, 8),
+      .slice(0, SEARCH_LIMIT),
   };
 }
 
@@ -196,13 +203,13 @@ async function getGraph(id) {
     openAlexFetch("/works", {
       filter: `cited_by:${id}`,
       sort: "cited_by_count:desc",
-      per_page: "12",
+      per_page: String(RELATION_LIMIT),
       select: WORK_FIELDS,
     }),
     openAlexFetch("/works", {
       filter: `cites:${id}`,
       sort: "cited_by_count:desc",
-      per_page: "12",
+      per_page: String(RELATION_LIMIT),
       select: WORK_FIELDS,
     }),
   ]);

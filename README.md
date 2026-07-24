@@ -66,10 +66,10 @@ source code or commit a `.env` file.
 
 ## Request limits
 
-- Search returns at most 8 papers.
-- A graph uses one selected paper, up to 12 references, and up to 12 citing
+- Search returns at most 12 papers.
+- A graph uses one selected paper, up to 14 references, and up to 14 citing
   papers.
-- Every graph is hard-capped at 25 nodes in normal use and 30 in the graph
+- Every graph is hard-capped at 29 nodes in normal use and 30 in the graph
   utility.
 - Search results are cached in the browser for 1 hour; graphs for 6 hours.
 - The proxy requests only the metadata fields displayed by the UI.

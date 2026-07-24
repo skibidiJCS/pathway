@@ -85,19 +85,22 @@ test("citation arrows point from citing work to cited work", () => {
   );
 });
 
-test("hard-caps a graph at 30 nodes", () => {
+test("limits a graph to 14 papers per citation direction", () => {
   const references = Array.from({ length: 20 }, (_, index) =>
     paper(`W${index + 10}`),
   );
   const citing = Array.from({ length: 20 }, (_, index) =>
     paper(`W${index + 100}`, "citing"),
   );
-  const graph = buildCitationGraph(
-    paper("W1", "selected"),
-    references,
-    citing,
-    99,
-  );
+  const graph = buildCitationGraph(paper("W1", "selected"), references, citing);
 
-  assert.ok(graph.nodes.length <= 30);
+  assert.equal(graph.nodes.length, 29);
+  assert.equal(
+    graph.nodes.filter((item) => item.relation === "reference").length,
+    14,
+  );
+  assert.equal(
+    graph.nodes.filter((item) => item.relation === "citing").length,
+    14,
+  );
 });

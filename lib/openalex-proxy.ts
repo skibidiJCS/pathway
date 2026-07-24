@@ -10,6 +10,9 @@ interface ProxyEnv {
 }
 
 const OPENALEX_API = "https://api.openalex.org";
+const SEARCH_LIMIT = 12;
+const RELATION_LIMIT = 14;
+const GRAPH_LIMIT = 29;
 const WORK_FIELDS = [
   "id",
   "doi",
@@ -93,7 +96,7 @@ async function searchWorks(query: string, env: ProxyEnv): Promise<Response> {
     "/works",
     {
       search: query,
-      per_page: "8",
+      per_page: String(SEARCH_LIMIT),
       select: WORK_FIELDS,
     },
     env,
@@ -103,7 +106,7 @@ async function searchWorks(query: string, env: ProxyEnv): Promise<Response> {
     results: (data.results ?? [])
       .map((work) => toPaper(work, "selected"))
       .filter((paper) => paper.id)
-      .slice(0, 8),
+      .slice(0, SEARCH_LIMIT),
   });
 }
 
@@ -115,7 +118,7 @@ async function getGraph(id: string, env: ProxyEnv): Promise<Response> {
       {
         filter: `cited_by:${id}`,
         sort: "cited_by_count:desc",
-        per_page: "12",
+        per_page: String(RELATION_LIMIT),
         select: WORK_FIELDS,
       },
       env,
@@ -125,7 +128,7 @@ async function getGraph(id: string, env: ProxyEnv): Promise<Response> {
       {
         filter: `cites:${id}`,
         sort: "cited_by_count:desc",
-        per_page: "12",
+        per_page: String(RELATION_LIMIT),
         select: WORK_FIELDS,
       },
       env,
@@ -140,7 +143,7 @@ async function getGraph(id: string, env: ProxyEnv): Promise<Response> {
     toPaper(work, "citing"),
   );
 
-  return json(buildCitationGraph(selected, references, citingPapers, 25));
+  return json(buildCitationGraph(selected, references, citingPapers, GRAPH_LIMIT));
 }
 
 export async function handleOpenAlexRequest(

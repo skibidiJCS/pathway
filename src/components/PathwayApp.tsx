@@ -13,6 +13,8 @@ type LoadState = "idle" | "loading" | "ready" | "error";
 type Theme = "light" | "dark";
 
 const CURRENT_YEAR = new Date().getFullYear();
+const SEARCH_RESULT_LIMIT = 12;
+const GRAPH_PAPER_LIMIT = 29;
 
 function resultMeta(paper: Paper): string {
   const authors =
@@ -38,7 +40,11 @@ export function PathwayApp() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("pathway:theme", theme);
+    try {
+      localStorage.setItem("pathway:theme", theme);
+    } catch {
+      // The active theme still works when browser storage is unavailable.
+    }
   }, [theme]);
 
   const visibleNodes = useMemo(() => {
@@ -66,7 +72,7 @@ export function PathwayApp() {
     setSearchError("");
     try {
       const response = await searchPapers(trimmed);
-      setResults(response.results.slice(0, 8));
+      setResults(response.results.slice(0, SEARCH_RESULT_LIMIT));
     } catch (error) {
       setResults([]);
       setSearchError(
@@ -111,7 +117,7 @@ export function PathwayApp() {
 
   const stepMinYear = (direction: -1 | 1) => {
     setMinYear((current) => {
-      if (!current) return String(CURRENT_YEAR);
+      if (!current) return String(CURRENT_YEAR + direction);
       const parsed = Number(current);
       const next = Number.isFinite(parsed) ? parsed + direction : CURRENT_YEAR;
       return String(Math.min(2100, Math.max(1000, next)));
@@ -123,13 +129,10 @@ export function PathwayApp() {
       <header className="site-header">
         <div className="brand">
           <img
-            className="brand-mark"
-            src="/pathway-logo.png"
-            alt=""
-            aria-hidden="true"
+            className="brand-logo"
+            src="/pathway-logo-full.png"
+            alt="Pathway Research"
           />
-          <span className="brand-name">Pathway</span>
-          <span className="brand-subtitle">Open citation explorer</span>
         </div>
         <div className="header-actions">
           <a
@@ -148,8 +151,14 @@ export function PathwayApp() {
             }
             aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            aria-pressed={theme === "dark"}
           >
-            <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+            <span className="theme-icon moon" aria-hidden="true">
+              ☾
+            </span>
+            <span className="theme-icon sun" aria-hidden="true">
+              ☀
+            </span>
           </button>
         </div>
       </header>
@@ -181,7 +190,7 @@ export function PathwayApp() {
             aria-live="polite"
           >
             {searchError ||
-              "Up to 8 results · each graph is limited to 25 papers"}
+              `Up to ${SEARCH_RESULT_LIMIT} results · each graph is limited to ${GRAPH_PAPER_LIMIT} papers`}
           </div>
           {graph ? (
             <div className="filters" aria-label="Graph filters">
@@ -197,7 +206,7 @@ export function PathwayApp() {
                       max="2100"
                       value={minYear}
                       onChange={(event) => setMinYear(event.target.value)}
-                      placeholder={String(CURRENT_YEAR)}
+                      placeholder="Any"
                     />
                     <span className="year-step-buttons">
                       <button
