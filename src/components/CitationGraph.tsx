@@ -1,226 +1,167 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import type { Core, ElementDefinition } from "cytoscape";
 import type { CitationGraphData, Paper } from "../../lib/research-types";
 
 interface CitationGraphProps {
   graph: CitationGraphData;
   visibleNodes: Paper[];
+  selectedId: string;
+  theme: "light" | "dark";
   onSelect: (paper: Paper) => void;
 }
 
-function shortLabel(title: string): string {
-  return title.length > 46 ? `${title.slice(0, 45)}…` : title;
+function relationPapers(
+  papers: Paper[],
+  relation: "reference" | "citing",
+): Paper[] {
+  return papers.filter(
+    (paper) => paper.relation === relation || paper.relation === "both",
+  );
+}
+
+function groupLabel(count: number, relation: "reference" | "citing"): string {
+  if (count === 0) {
+    return relation === "reference"
+      ? "No indexed references"
+      : "No citing papers found";
+  }
+  if (relation === "reference") {
+    return `${count} ${count === 1 ? "reference" : "references"}`;
+  }
+  return `${count} citing ${count === 1 ? "paper" : "papers"}`;
+}
+
+interface PaperSheetProps {
+  paper: Paper;
+  active: boolean;
+  onSelect: (paper: Paper) => void;
+}
+
+function PaperSheet({ paper, active, onSelect }: PaperSheetProps) {
+  return (
+    <button
+      className={`paper-sheet ${paper.relation}${active ? " active" : ""}`}
+      type="button"
+      onClick={() => onSelect(paper)}
+      aria-pressed={active}
+      title={paper.title}
+    >
+      <span className="paper-binding" aria-hidden="true" />
+      <span className="paper-sheet-title">{paper.title}</span>
+      <span className="paper-sheet-meta">
+        {paper.year ?? "Year unknown"} ·{" "}
+        {paper.citationCount.toLocaleString()} citations
+      </span>
+      {paper.relation === "both" ? (
+        <span className="paper-sheet-relation">Mutual citation</span>
+      ) : null}
+    </button>
+  );
+}
+
+interface PaperGroupProps {
+  papers: Paper[];
+  relation: "reference" | "citing";
+  selectedId: string;
+  onSelect: (paper: Paper) => void;
+}
+
+function PaperGroup({
+  papers,
+  relation,
+  selectedId,
+  onSelect,
+}: PaperGroupProps) {
+  const isReference = relation === "reference";
+
+  return (
+    <section
+      className={`paper-group ${relation}${papers.length === 0 ? " empty" : ""}`}
+      aria-label={isReference ? "References" : "Citing papers"}
+    >
+      <header className="paper-group-heading">
+        <strong>{groupLabel(papers.length, relation)}</strong>
+        <span>
+          {isReference
+            ? "The selected paper cites these"
+            : "These papers cite the selected paper"}
+        </span>
+      </header>
+      {papers.length > 0 ? (
+        <div className="paper-grid">
+          {papers.map((paper) => (
+            <PaperSheet
+              key={`${relation}-${paper.id}`}
+              paper={paper}
+              active={paper.id === selectedId}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="paper-group-empty">
+          No records available from OpenAlex.
+        </p>
+      )}
+    </section>
+  );
 }
 
 export function CitationGraph({
   graph,
   visibleNodes,
+  selectedId,
+  theme,
   onSelect,
 }: CitationGraphProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const onSelectRef = useRef(onSelect);
-
-  useEffect(() => {
-    onSelectRef.current = onSelect;
-  }, [onSelect]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    let cy: Core | undefined;
-    let cancelled = false;
-
-    const render = async () => {
-      const { default: cytoscape } = await import("cytoscape");
-      if (cancelled || !containerRef.current) return;
-
-      const references = visibleNodes.filter(
-        (paper) => paper.relation === "reference" || paper.relation === "both",
-      );
-      const citing = visibleNodes.filter(
-        (paper) => paper.relation === "citing" || paper.relation === "both",
-      );
-      const positions = new Map<string, { x: number; y: number }>();
-      positions.set(graph.centerId, { x: 0, y: 0 });
-
-      const placeGroup = (papers: Paper[], side: "left" | "right") => {
-        const columns = papers.length > 6 ? 2 : 1;
-        const rows = Math.ceil(papers.length / columns);
-        const spacing = 70;
-        const start = -((rows - 1) * spacing) / 2;
-        const xPositions =
-          side === "left"
-            ? columns === 2
-              ? [-445, -255]
-              : [-340]
-            : columns === 2
-              ? [255, 445]
-              : [340];
-
-        papers.forEach((paper, index) => {
-          if (!positions.has(paper.id)) {
-            positions.set(paper.id, {
-              x: xPositions[index % columns],
-              y: start + Math.floor(index / columns) * spacing,
-            });
-          }
-        });
-      };
-
-      placeGroup(references, "left");
-      placeGroup(citing, "right");
-
-      const elements: ElementDefinition[] = visibleNodes.map((paper) => ({
-        data: {
-          id: paper.id,
-          label: shortLabel(paper.title),
-          relation: paper.relation,
-          citations: paper.citationCount,
-          paper,
-        },
-        position: positions.get(paper.id) ?? { x: 0, y: 0 },
-      }));
-
-      cy = cytoscape({
-        container: containerRef.current,
-        elements,
-        layout: { name: "preset", fit: true, padding: 110 },
-        minZoom: 0.35,
-        maxZoom: 1.15,
-        userZoomingEnabled: false,
-        userPanningEnabled: false,
-        boxSelectionEnabled: false,
-        autoungrabify: true,
-        style: [
-          {
-            selector: "node",
-            style: {
-              width: 172,
-              height: 54,
-              shape: "round-rectangle",
-              "background-color": "#ffffff",
-              "border-width": 1.5,
-              "border-color": "#9aa5b1",
-              label: "data(label)",
-              color: "#1d2733",
-              "font-size": 9.5,
-              "font-family": "Inter, system-ui, sans-serif",
-              "font-weight": 600,
-              "text-wrap": "wrap",
-              "text-max-width": "148px",
-              "text-valign": "center",
-              "text-halign": "center",
-              "overlay-opacity": 0,
-            },
-          },
-          {
-            selector: 'node[relation = "selected"]',
-            style: {
-              "background-color": "#6746a5",
-              "border-color": "#513384",
-              width: 212,
-              height: 66,
-              color: "#ffffff",
-              "font-size": 11,
-              "font-weight": 700,
-            },
-          },
-          {
-            selector: 'node[relation = "reference"]',
-            style: {
-              "background-color": "#edf4fd",
-              "border-color": "#5683bf",
-            },
-          },
-          {
-            selector: 'node[relation = "citing"]',
-            style: {
-              "background-color": "#fff2df",
-              "border-color": "#c48235",
-            },
-          },
-          {
-            selector: 'node[relation = "both"]',
-            style: {
-              "background-color": "#eee9f8",
-              "border-color": "#7959ad",
-            },
-          },
-          {
-            selector: "node:selected",
-            style: {
-              "border-width": 3,
-              "border-color": "#18202b",
-            },
-          },
-        ],
-      });
-
-      cy.on("tap", "node", (event) => {
-        const paper = event.target.data("paper") as Paper;
-        onSelectRef.current(paper);
-      });
-
-      const observer = new ResizeObserver(() => {
-        cy?.resize();
-        cy?.fit(undefined, 110);
-      });
-      observer.observe(containerRef.current);
-      cy.one("destroy", () => observer.disconnect());
-    };
-
-    void render();
-    return () => {
-      cancelled = true;
-      cy?.destroy();
-    };
-  }, [graph, visibleNodes]);
+  const references = relationPapers(visibleNodes, "reference");
+  const citing = relationPapers(visibleNodes, "citing");
+  const selected =
+    visibleNodes.find((paper) => paper.id === graph.centerId) ??
+    graph.nodes.find((paper) => paper.id === graph.centerId) ??
+    null;
+  const layoutClasses = [
+    "citation-map",
+    references.length === 0 ? "no-references" : "",
+    citing.length === 0 ? "no-citing" : "",
+    `theme-${theme}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <>
-      <div className="graph-zone reference" aria-hidden="true" />
-      <div className="graph-zone citing" aria-hidden="true" />
-      <div className="graph-group-headings" aria-hidden="true">
-        <div className="graph-group-heading reference">
-          <strong>{referencesLabel(visibleNodes)}</strong>
-          <span>The selected paper cites these</span>
-        </div>
-        <div className="graph-group-heading selected">Selected paper</div>
-        <div className="graph-group-heading citing">
-          <strong>{citingLabel(visibleNodes)}</strong>
-          <span>These papers cite the selected paper</span>
-        </div>
-      </div>
-      <div
-        ref={containerRef}
-        className="graph-container"
-        role="img"
-        aria-label={`Citation map with ${relationCount(visibleNodes, "reference")} references that the selected paper cites and ${relationCount(visibleNodes, "citing")} papers that cite the selected paper.`}
+    <div
+      className={layoutClasses}
+      aria-label={`Citation map with ${references.length} references that the selected paper cites and ${citing.length} papers that cite the selected paper.`}
+    >
+      <PaperGroup
+        papers={references}
+        relation="reference"
+        selectedId={selectedId}
+        onSelect={onSelect}
       />
-    </>
+
+      <section className="selected-paper-column" aria-label="Selected paper">
+        <span className="selected-paper-label">Selected paper</span>
+        {selected ? (
+          <PaperSheet
+            paper={selected}
+            active={selected.id === selectedId}
+            onSelect={onSelect}
+          />
+        ) : null}
+        <p className="relationship-summary">
+          <span className="reference-text">References</span> are cited by this
+          paper. <span className="citing-text">Citing papers</span> cite it.
+        </p>
+      </section>
+
+      <PaperGroup
+        papers={citing}
+        relation="citing"
+        selectedId={selectedId}
+        onSelect={onSelect}
+      />
+    </div>
   );
-}
-
-function relationCount(
-  papers: Paper[],
-  relation: "reference" | "citing",
-): number {
-  return papers.filter(
-    (paper) => paper.relation === relation || paper.relation === "both",
-  ).length;
-}
-
-function referencesLabel(papers: Paper[]): string {
-  const count = relationCount(papers, "reference");
-  return count === 0
-    ? "No indexed references"
-    : `${count} ${count === 1 ? "reference" : "references"}`;
-}
-
-function citingLabel(papers: Paper[]): string {
-  const count = relationCount(papers, "citing");
-  return count === 0
-    ? "No citing papers found"
-    : `${count} citing ${count === 1 ? "paper" : "papers"}`;
 }

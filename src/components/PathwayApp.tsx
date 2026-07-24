@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { loadCitationGraph, searchPapers } from "../api-client";
 import type {
   CitationGraphData,
@@ -10,6 +10,9 @@ import { CitationGraph } from "./CitationGraph";
 import { PaperDetails } from "./PaperDetails";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
+type Theme = "light" | "dark";
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 function resultMeta(paper: Paper): string {
   const authors =
@@ -29,6 +32,14 @@ export function PathwayApp() {
   const [detailsCollapsed, setDetailsCollapsed] = useState(false);
   const [minYear, setMinYear] = useState("");
   const [minCitations, setMinCitations] = useState("");
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.dataset.theme === "dark" ? "dark" : "light",
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("pathway:theme", theme);
+  }, [theme]);
 
   const visibleNodes = useMemo(() => {
     if (!graph) return [];
@@ -98,6 +109,15 @@ export function PathwayApp() {
     setDetailsCollapsed(false);
   };
 
+  const stepMinYear = (direction: -1 | 1) => {
+    setMinYear((current) => {
+      if (!current) return String(CURRENT_YEAR);
+      const parsed = Number(current);
+      const next = Number.isFinite(parsed) ? parsed + direction : CURRENT_YEAR;
+      return String(Math.min(2100, Math.max(1000, next)));
+    });
+  };
+
   return (
     <main className="app-shell">
       <header className="site-header">
@@ -111,53 +131,91 @@ export function PathwayApp() {
           <span className="brand-name">Pathway</span>
           <span className="brand-subtitle">Open citation explorer</span>
         </div>
-        <a
-          className="source-link"
-          href="https://openalex.org"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Data by OpenAlex ↗
-        </a>
+        <div className="header-actions">
+          <a
+            className="source-link"
+            href="https://openalex.org"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Data by OpenAlex ↗
+          </a>
+          <button
+            className="theme-toggle"
+            type="button"
+            onClick={() =>
+              setTheme((current) => (current === "light" ? "dark" : "light"))
+            }
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+          </button>
+        </div>
       </header>
 
       <section className="search-region" aria-label="Paper search">
-        <div className="search-controls">
-          <form className="search-row" onSubmit={handleSearch}>
-            <div className="search-field">
-              <span className="search-icon" aria-hidden="true">
-                ⌕
-              </span>
-              <input
-                className="search-input"
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by paper title or DOI"
-                aria-label="Paper title or DOI"
-                autoComplete="off"
-              />
-            </div>
-            <button className="search-button" type="submit" disabled={searching}>
-              {searching ? "Searching…" : "Search"}
-            </button>
-          </form>
-
+        <form className="search-row" onSubmit={handleSearch}>
+          <div className="search-field">
+            <span className="search-icon" aria-hidden="true">
+              ⌕
+            </span>
+            <input
+              className="search-input"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by paper title or DOI"
+              aria-label="Paper title or DOI"
+              autoComplete="off"
+            />
+          </div>
+          <button className="search-button" type="submit" disabled={searching}>
+            {searching ? "Searching…" : "Search"}
+          </button>
+        </form>
+        <div className="search-meta-row">
+          <div
+            className={`search-note${searchError ? " error-text" : ""}`}
+            role={searchError ? "alert" : "status"}
+            aria-live="polite"
+          >
+            {searchError ||
+              "Up to 8 results · each graph is limited to 25 papers"}
+          </div>
           {graph ? (
             <div className="filters" aria-label="Graph filters">
               <div className="filter-fields">
                 <label className="filter-label">
                   Year from
-                  <input
-                    className="filter-input"
-                    type="number"
-                    inputMode="numeric"
-                    min="1000"
-                    max="2100"
-                    value={minYear}
-                    onChange={(event) => setMinYear(event.target.value)}
-                    placeholder="Any"
-                  />
+                  <span className="year-control">
+                    <input
+                      className="filter-input year-input"
+                      type="number"
+                      inputMode="numeric"
+                      min="1000"
+                      max="2100"
+                      value={minYear}
+                      onChange={(event) => setMinYear(event.target.value)}
+                      placeholder={String(CURRENT_YEAR)}
+                    />
+                    <span className="year-step-buttons">
+                      <button
+                        type="button"
+                        onClick={() => stepMinYear(1)}
+                        aria-label="Increase minimum year"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => stepMinYear(-1)}
+                        aria-label="Decrease minimum year"
+                      >
+                        −
+                      </button>
+                    </span>
+                  </span>
                 </label>
                 <label className="filter-label">
                   Min. citations
@@ -184,14 +242,6 @@ export function PathwayApp() {
               </div>
             </div>
           ) : null}
-        </div>
-        <div
-          className={`search-note${searchError ? " error-text" : ""}`}
-          role={searchError ? "alert" : "status"}
-          aria-live="polite"
-        >
-          {searchError ||
-            "Up to 8 results · each graph is limited to 25 papers"}
         </div>
 
         {results ? (
@@ -281,6 +331,8 @@ export function PathwayApp() {
                 graph={graph}
                 visibleNodes={visibleNodes}
                 onSelect={selectNode}
+                selectedId={selectedPaper?.id ?? graph.centerId}
+                theme={theme}
               />
               <div className="graph-footer">
                 Showing {visibleNodes.length} of {graph.nodes.length} papers ·

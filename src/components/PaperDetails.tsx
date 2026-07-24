@@ -89,11 +89,7 @@ export function PaperDetails({
                 <span className="detail-label">Access</span>
                 <span className="detail-value">
                   <span
-                    className="oa-pill"
-                    style={{
-                      background: paper.isOpenAccess ? "#e7f4ed" : "#f0f1f2",
-                      color: paper.isOpenAccess ? "#257451" : "#69717c",
-                    }}
+                    className={`oa-pill ${paper.isOpenAccess ? "open" : "closed"}`}
                   >
                     {paper.isOpenAccess
                       ? paper.openAccessStatus || "Open"

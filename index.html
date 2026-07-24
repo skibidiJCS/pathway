@@ -29,6 +29,19 @@
       name="twitter:image"
       content="https://pathwayresearch.vercel.app/og.png"
     />
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("pathway:theme");
+        document.documentElement.dataset.theme =
+          savedTheme === "dark" || savedTheme === "light"
+            ? savedTheme
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+      } catch {
+        document.documentElement.dataset.theme = "light";
+      }
+    </script>
     <title>Pathway</title>
   </head>
   <body>
