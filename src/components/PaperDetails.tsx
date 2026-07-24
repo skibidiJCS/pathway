@@ -37,14 +37,25 @@ export function PaperDetails({
           className="panel-toggle"
           type="button"
           onClick={onToggle}
+          aria-expanded={!collapsed}
+          aria-controls="paper-details-content"
           aria-label={collapsed ? "Expand paper details" : "Collapse paper details"}
           title={collapsed ? "Expand details" : "Collapse details"}
         >
-          {collapsed ? "‹" : "›"}
+          <span className="toggle-desktop" aria-hidden="true">
+            {collapsed ? "‹" : "Hide ›"}
+          </span>
+          <span className="toggle-mobile" aria-hidden="true">
+            {collapsed ? "Show ↓" : "Hide ↑"}
+          </span>
         </button>
       </div>
 
-      <div className="details-content">
+      <div
+        id="paper-details-content"
+        className="details-content"
+        hidden={collapsed}
+      >
         {!paper ? (
           <p className="detail-empty">
             Select a paper in the graph to inspect its available metadata.

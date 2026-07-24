@@ -102,9 +102,12 @@ export function PathwayApp() {
     <main className="app-shell">
       <header className="site-header">
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true">
-            RA
-          </div>
+          <img
+            className="brand-mark"
+            src="/pathway-logo.png"
+            alt=""
+            aria-hidden="true"
+          />
           <span className="brand-name">Pathway</span>
           <span className="brand-subtitle">Open citation explorer</span>
         </div>
@@ -138,7 +141,11 @@ export function PathwayApp() {
             {searching ? "Searching…" : "Search"}
           </button>
         </form>
-        <div className={`search-note${searchError ? " error-text" : ""}`}>
+        <div
+          className={`search-note${searchError ? " error-text" : ""}`}
+          role={searchError ? "alert" : "status"}
+          aria-live="polite"
+        >
           {searchError ||
             "Up to 8 results · each graph is limited to 25 papers"}
         </div>
@@ -166,7 +173,9 @@ export function PathwayApp() {
         ) : null}
       </section>
 
-      <section className="workspace">
+      <section
+        className={`workspace${detailsCollapsed ? " details-collapsed" : ""}`}
+      >
         <div className="graph-stage">
           <div className="graph-toolbar">
             <div className="legend" aria-label="Graph legend">

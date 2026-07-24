@@ -76,16 +76,9 @@ a:focus-visible {
 }
 
 .brand-mark {
-  width: 29px;
-  height: 29px;
-  border-radius: 8px;
-  background: var(--ink);
-  color: white;
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  width: 52px;
+  height: 30px;
+  object-fit: contain;
 }
 
 .brand-name {
@@ -192,6 +185,10 @@ a:focus-visible {
   font-size: 11px;
 }
 
+.search-note.error-text {
+  font-weight: 700;
+}
+
 .search-results {
   position: absolute;
   top: calc(100% - 5px);
@@ -253,6 +250,10 @@ a:focus-visible {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 355px;
+}
+
+.workspace.details-collapsed {
+  grid-template-columns: minmax(0, 1fr) 48px;
 }
 
 .graph-stage {
@@ -446,7 +447,7 @@ a:focus-visible {
 }
 
 .details-panel.collapsed {
-  width: 48px;
+  width: auto;
 }
 
 .details-head {
@@ -467,12 +468,15 @@ a:focus-visible {
 }
 
 .panel-toggle {
-  width: 28px;
+  min-width: 28px;
   height: 28px;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -483,10 +487,15 @@ a:focus-visible {
 
 .details-panel.collapsed .details-head {
   padding: 10px;
+  justify-content: center;
 }
 
 .details-panel.collapsed .details-heading,
 .details-panel.collapsed .details-content {
+  display: none;
+}
+
+.toggle-mobile {
   display: none;
 }
 
@@ -648,6 +657,14 @@ a:focus-visible {
     width: auto;
     border-top: 1px solid var(--line);
     border-left: 0;
+  }
+
+  .toggle-desktop {
+    display: none;
+  }
+
+  .toggle-mobile {
+    display: inline;
   }
 
   .details-panel.collapsed .details-head {

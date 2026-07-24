@@ -32,24 +32,23 @@ client.
 1. Push this folder to a GitHub, GitLab, or Bitbucket repository.
 2. Sign in at [vercel.com](https://vercel.com) and select **Add New → Project**.
 3. Import the repository.
-4. Set **Project Name** to `pathway`.
+4. Set **Project Name** to `pathwayresearch`.
 5. Confirm **Framework Preset** is **Vite**. The repository already provides:
    - Build command: `npm run build`
    - Output directory: `dist`
 6. Open **Environment Variables** and add:
    - Name: `OPENALEX_API_KEY`
    - Value: your free OpenAlex API key
-   - Environments: Production, Preview, and Development
+   - Environments: Production and Preview
 7. Select **Deploy**.
 8. After deployment, open **Settings → Domains** and confirm
-   `pathway.vercel.app` is assigned.
+   `pathwayresearch.vercel.app` is assigned.
 9. Under **Settings → Deployment Protection**, do not enable Vercel
    Authentication for all deployments. The production domain will then be
    publicly accessible without a login.
 
-Vercel assigns `.vercel.app` names on a first-come, first-served basis. Setting
-the project name to `pathway` requests `pathway.vercel.app`, but the exact URL
-cannot be guaranteed until Vercel confirms it is available.
+Vercel assigns `.vercel.app` names on a first-come, first-served basis. This
+project uses `pathwayresearch.vercel.app`.
 
 ### CLI alternative
 

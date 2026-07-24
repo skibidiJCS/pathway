@@ -27,10 +27,20 @@ async function cachedRequest<T>(url: string, ttlMs: number): Promise<T> {
   const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
-  const data = (await response.json()) as T & { error?: string };
-  if (!response.ok) {
-    throw new Error(data.error || "The request could not be completed.");
+  const contentType = response.headers.get("content-type") ?? "";
+  let data: (T & { error?: string }) | null = null;
+
+  if (contentType.includes("application/json")) {
+    data = (await response.json()) as T & { error?: string };
   }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error ||
+        "Search is temporarily unavailable. Please try again in a moment.",
+    );
+  }
+  if (!data) throw new Error("The server returned an unexpected response.");
 
   const entry = { expires: now + ttlMs, value: data };
   memoryCache.set(key, entry);

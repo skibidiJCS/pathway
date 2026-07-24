@@ -3,7 +3,7 @@ import {
   normalizeOpenAlexId,
   toPaper,
   type OpenAlexWork,
-} from "./openalex";
+} from "./openalex.ts";
 
 interface ProxyEnv {
   OPENALEX_API_KEY?: string;
