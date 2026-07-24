@@ -4,7 +4,7 @@ import type { Paper } from "../../lib/research-types";
 
 interface PaperDetailsProps {
   paper: Paper | null;
-  collapsed: boolean;
+  expanded: boolean;
   onToggle: () => void;
 }
 
@@ -23,48 +23,41 @@ function authorsText(authors: string[]): string {
 
 export function PaperDetails({
   paper,
-  collapsed,
+  expanded,
   onToggle,
 }: PaperDetailsProps) {
   return (
     <aside
-      className={`details-panel${collapsed ? " collapsed" : ""}`}
+      className={`details-panel${expanded ? " expanded" : ""}`}
       aria-label="Paper details"
     >
-      <div className="details-head">
-        <h2 className="details-heading">Paper details</h2>
-        <button
-          className="panel-toggle"
-          type="button"
-          onClick={onToggle}
-          aria-expanded={!collapsed}
-          aria-controls="paper-details-content"
-          aria-label={collapsed ? "Expand paper details" : "Collapse paper details"}
-          title={collapsed ? "Expand details" : "Collapse details"}
-        >
-          <span className="toggle-desktop" aria-hidden="true">
-            {collapsed ? "‹" : "Hide ›"}
-          </span>
-          <span className="toggle-mobile" aria-hidden="true">
-            {collapsed ? "Show ↓" : "Hide ↑"}
-          </span>
-        </button>
-      </div>
-
-      <div
-        id="paper-details-content"
-        className="details-content"
-        hidden={collapsed}
-      >
+      <div id="paper-details-content" className="details-content">
+        <div className="detail-toolbar">
+          {paper ? (
+            <span className={`relation-pill ${paper.relation}`}>
+              {relationLabels[paper.relation]}
+            </span>
+          ) : (
+            <span />
+          )}
+          <button
+            className="panel-toggle"
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            aria-controls="paper-details-content"
+            aria-label={expanded ? "Reduce paper details" : "Open paper details"}
+            title={expanded ? "Reduce details" : "Open details"}
+          >
+            {expanded ? "Reduce →" : "Open ←"}
+          </button>
+        </div>
         {!paper ? (
           <p className="detail-empty">
             Select a paper in the graph to inspect its available metadata.
           </p>
         ) : (
           <>
-            <span className={`relation-pill ${paper.relation}`}>
-              {relationLabels[paper.relation]}
-            </span>
             <h3 className="detail-title">{paper.title}</h3>
             <p className="detail-authors">{authorsText(paper.authors)}</p>
 

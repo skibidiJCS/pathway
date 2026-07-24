@@ -31,7 +31,7 @@ export function PathwayApp() {
   const [graphState, setGraphState] = useState<LoadState>("idle");
   const [graphError, setGraphError] = useState("");
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
-  const [detailsCollapsed, setDetailsCollapsed] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [minYear, setMinYear] = useState("");
   const [minCitations, setMinCitations] = useState("");
   const [theme, setTheme] = useState<Theme>(() =>
@@ -89,7 +89,7 @@ export function PathwayApp() {
     setGraphError("");
     setGraph(null);
     setSelectedPaper(paper);
-    setDetailsCollapsed(false);
+    setDetailsExpanded(false);
     setMinYear("");
     setMinCitations("");
 
@@ -112,7 +112,6 @@ export function PathwayApp() {
 
   const selectNode = (paper: Paper) => {
     setSelectedPaper(paper);
-    setDetailsCollapsed(false);
   };
 
   const stepMinYear = (direction: -1 | 1) => {
@@ -191,24 +190,6 @@ export function PathwayApp() {
           >
             {searchError ||
               `Up to ${SEARCH_RESULT_LIMIT} results · each graph is limited to ${GRAPH_PAPER_LIMIT} papers`}
-          </div>
-          <div className="legend" aria-label="Graph legend">
-            <span className="legend-item">
-              <span className="legend-dot selected" />
-              Selected paper
-            </span>
-            <span className="legend-item">
-              <span className="legend-dot reference" />
-              References
-            </span>
-            <span className="legend-item">
-              <span className="legend-dot citing" />
-              Citing papers
-            </span>
-            <span className="legend-item">
-              <span className="legend-dot both" />
-              Both
-            </span>
           </div>
           {graph ? (
             <div className="filters" aria-label="Graph filters">
@@ -295,7 +276,7 @@ export function PathwayApp() {
       </section>
 
       <section
-        className={`workspace${detailsCollapsed ? " details-collapsed" : ""}`}
+        className={`workspace${detailsExpanded ? " details-expanded" : ""}`}
       >
         <div className="graph-stage">
           {graphState === "idle" ? (
@@ -350,8 +331,8 @@ export function PathwayApp() {
 
         <PaperDetails
           paper={selectedPaper}
-          collapsed={detailsCollapsed}
-          onToggle={() => setDetailsCollapsed((value) => !value)}
+          expanded={detailsExpanded}
+          onToggle={() => setDetailsExpanded((value) => !value)}
         />
       </section>
     </main>

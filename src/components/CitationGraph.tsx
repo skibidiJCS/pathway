@@ -20,15 +20,10 @@ function relationPapers(
 }
 
 function groupLabel(count: number, relation: "reference" | "citing"): string {
-  if (count === 0) {
-    return relation === "reference"
-      ? "No indexed references"
-      : "No citing papers found";
-  }
   if (relation === "reference") {
-    return `${count} ${count === 1 ? "reference" : "references"}`;
+    return `References (${count})`;
   }
-  return `${count} citing ${count === 1 ? "paper" : "papers"}`;
+  return `Citing papers (${count})`;
 }
 
 interface PaperSheetProps {
@@ -133,13 +128,6 @@ export function CitationGraph({
       className={layoutClasses}
       aria-label={`Citation map with ${references.length} references that the selected paper cites and ${citing.length} papers that cite the selected paper.`}
     >
-      <PaperGroup
-        papers={references}
-        relation="reference"
-        selectedId={selectedId}
-        onSelect={onSelect}
-      />
-
       <section className="selected-paper-column" aria-label="Selected paper">
         <span className="selected-paper-label">Selected paper</span>
         {selected ? (
@@ -154,6 +142,13 @@ export function CitationGraph({
           paper. <span className="citing-text">Citing papers</span> cite it.
         </p>
       </section>
+
+      <PaperGroup
+        papers={references}
+        relation="reference"
+        selectedId={selectedId}
+        onSelect={onSelect}
+      />
 
       <PaperGroup
         papers={citing}
