@@ -11,7 +11,7 @@ interface CitationGraphProps {
 }
 
 function shortLabel(title: string): string {
-  return title.length > 40 ? `${title.slice(0, 39)}…` : title;
+  return title.length > 46 ? `${title.slice(0, 45)}…` : title;
 }
 
 export function CitationGraph({
@@ -45,18 +45,32 @@ export function CitationGraph({
       const positions = new Map<string, { x: number; y: number }>();
       positions.set(graph.centerId, { x: 0, y: 0 });
 
-      const placeColumn = (papers: Paper[], x: number) => {
-        const spacing = Math.min(92, 560 / Math.max(1, papers.length));
-        const start = -((papers.length - 1) * spacing) / 2;
+      const placeGroup = (papers: Paper[], side: "left" | "right") => {
+        const columns = papers.length > 6 ? 2 : 1;
+        const rows = Math.ceil(papers.length / columns);
+        const spacing = 70;
+        const start = -((rows - 1) * spacing) / 2;
+        const xPositions =
+          side === "left"
+            ? columns === 2
+              ? [-445, -255]
+              : [-340]
+            : columns === 2
+              ? [255, 445]
+              : [340];
+
         papers.forEach((paper, index) => {
           if (!positions.has(paper.id)) {
-            positions.set(paper.id, { x, y: start + index * spacing });
+            positions.set(paper.id, {
+              x: xPositions[index % columns],
+              y: start + Math.floor(index / columns) * spacing,
+            });
           }
         });
       };
 
-      placeColumn(references, -310);
-      placeColumn(citing, 310);
+      placeGroup(references, "left");
+      placeGroup(citing, "right");
 
       const elements: ElementDefinition[] = [
         ...visibleNodes.map((paper) => ({
@@ -79,6 +93,8 @@ export function CitationGraph({
               id: edge.id,
               source: edge.source,
               target: edge.target,
+              relation:
+                edge.source === graph.centerId ? "reference" : "citing",
             },
           })),
       ];
@@ -86,7 +102,7 @@ export function CitationGraph({
       cy = cytoscape({
         container: containerRef.current,
         elements,
-        layout: { name: "preset", fit: true, padding: 85 },
+        layout: { name: "preset", fit: true, padding: 110 },
         minZoom: 0.38,
         maxZoom: 2.1,
         wheelSensitivity: 0.18,
@@ -94,7 +110,7 @@ export function CitationGraph({
           {
             selector: "node",
             style: {
-              width: 188,
+              width: 172,
               height: 54,
               shape: "round-rectangle",
               "background-color": "#ffffff",
@@ -106,7 +122,7 @@ export function CitationGraph({
               "font-family": "Inter, system-ui, sans-serif",
               "font-weight": 600,
               "text-wrap": "wrap",
-              "text-max-width": "162px",
+              "text-max-width": "148px",
               "text-valign": "center",
               "text-halign": "center",
               "overlay-opacity": 0,
@@ -117,8 +133,10 @@ export function CitationGraph({
             style: {
               "background-color": "#6746a5",
               "border-color": "#513384",
+              width: 212,
+              height: 66,
               color: "#ffffff",
-              "font-size": 10.5,
+              "font-size": 11,
               "font-weight": 700,
             },
           },
@@ -153,13 +171,27 @@ export function CitationGraph({
           {
             selector: "edge",
             style: {
-              width: 1.3,
+              width: 1.6,
               "line-color": "#a8b0ba",
               "target-arrow-color": "#77818d",
               "target-arrow-shape": "triangle",
               "arrow-scale": 0.85,
               "curve-style": "bezier",
               opacity: 0.8,
+            },
+          },
+          {
+            selector: 'edge[relation = "reference"]',
+            style: {
+              "line-color": "#7d9fca",
+              "target-arrow-color": "#5683bf",
+            },
+          },
+          {
+            selector: 'edge[relation = "citing"]',
+            style: {
+              "line-color": "#d3a36a",
+              "target-arrow-color": "#c48235",
             },
           },
         ],
@@ -172,7 +204,7 @@ export function CitationGraph({
 
       const observer = new ResizeObserver(() => {
         cy?.resize();
-        cy?.fit(undefined, 80);
+        cy?.fit(undefined, 110);
       });
       observer.observe(containerRef.current);
       cy.one("destroy", () => observer.disconnect());
@@ -186,11 +218,49 @@ export function CitationGraph({
   }, [graph, visibleNodes]);
 
   return (
-    <div
-      ref={containerRef}
-      className="graph-container"
-      role="img"
-      aria-label="Citation graph. Arrows point from the citing paper to the paper it references."
-    />
+    <>
+      <div className="graph-zone reference" aria-hidden="true" />
+      <div className="graph-zone citing" aria-hidden="true" />
+      <div className="graph-group-headings" aria-hidden="true">
+        <div className="graph-group-heading reference">
+          <strong>{referencesLabel(visibleNodes)}</strong>
+          <span>The selected paper cites these</span>
+        </div>
+        <div className="graph-group-heading selected">Selected paper</div>
+        <div className="graph-group-heading citing">
+          <strong>{citingLabel(visibleNodes)}</strong>
+          <span>These papers cite the selected paper</span>
+        </div>
+      </div>
+      <div
+        ref={containerRef}
+        className="graph-container"
+        role="img"
+        aria-label={`Citation graph with ${relationCount(visibleNodes, "reference")} references and ${relationCount(visibleNodes, "citing")} citing papers. Arrows point from the citing paper to the paper it references.`}
+      />
+    </>
   );
+}
+
+function relationCount(
+  papers: Paper[],
+  relation: "reference" | "citing",
+): number {
+  return papers.filter(
+    (paper) => paper.relation === relation || paper.relation === "both",
+  ).length;
+}
+
+function referencesLabel(papers: Paper[]): string {
+  const count = relationCount(papers, "reference");
+  return count === 0
+    ? "No indexed references"
+    : `${count} ${count === 1 ? "reference" : "references"}`;
+}
+
+function citingLabel(papers: Paper[]): string {
+  const count = relationCount(papers, "citing");
+  return count === 0
+    ? "No citing papers found"
+    : `${count} citing ${count === 1 ? "paper" : "papers"}`;
 }

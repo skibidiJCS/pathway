@@ -181,15 +181,15 @@ export function PathwayApp() {
             <div className="legend" aria-label="Graph legend">
               <span className="legend-item">
                 <span className="legend-dot selected" />
-                Selected
+                Selected paper
               </span>
               <span className="legend-item">
                 <span className="legend-dot reference" />
-                References
+                References · this paper cites
               </span>
               <span className="legend-item">
                 <span className="legend-dot citing" />
-                Citing papers
+                Citing papers · cite this paper
               </span>
               <span className="legend-item">
                 <span className="legend-dot both" />
@@ -282,8 +282,8 @@ export function PathwayApp() {
                 onSelect={selectNode}
               />
               <div className="graph-footer">
-                Showing {visibleNodes.length} of {graph.nodes.length} papers ·
-                scroll to zoom, drag to pan
+                Arrow = citing paper → cited paper · showing{" "}
+                {visibleNodes.length} of {graph.nodes.length} papers
               </div>
             </>
           ) : null}

@@ -370,6 +370,74 @@ a:focus-visible {
 .graph-container {
   position: absolute;
   inset: 0;
+  z-index: 2;
+}
+
+.graph-zone {
+  position: absolute;
+  z-index: 1;
+  top: 66px;
+  bottom: 42px;
+  width: calc(50% - 132px);
+  border: 1px solid;
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+.graph-zone.reference {
+  left: 14px;
+  border-color: rgba(86, 131, 191, 0.24);
+  background: rgba(232, 240, 251, 0.48);
+}
+
+.graph-zone.citing {
+  right: 14px;
+  border-color: rgba(196, 130, 53, 0.24);
+  background: rgba(255, 240, 220, 0.48);
+}
+
+.graph-group-headings {
+  position: absolute;
+  z-index: 3;
+  top: 78px;
+  left: 26px;
+  right: 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.graph-group-heading {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.graph-group-heading strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.graph-group-heading.reference strong {
+  color: var(--blue);
+}
+
+.graph-group-heading.citing strong {
+  color: var(--amber);
+}
+
+.graph-group-heading.selected {
+  color: var(--violet);
+  padding-top: 2px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .graph-state {
@@ -720,6 +788,27 @@ a:focus-visible {
     left: 10px;
     right: 10px;
     flex-direction: column;
+  }
+
+  .graph-zone {
+    top: 116px;
+    width: calc(50% - 76px);
+  }
+
+  .graph-group-headings {
+    top: 126px;
+    left: 16px;
+    right: 16px;
+    grid-template-columns: minmax(0, 1fr) 116px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .graph-group-heading span {
+    display: none;
+  }
+
+  .graph-group-heading strong {
+    font-size: 9px;
   }
 
   .legend,
