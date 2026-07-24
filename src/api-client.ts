@@ -5,7 +5,7 @@ import type {
   SearchResponse,
 } from "../lib/research-types";
 
-const CACHE_PREFIX = "researchatlas:v1:";
+const CACHE_PREFIX = "pathway:v1:";
 const memoryCache = new Map<string, { expires: number; value: unknown }>();
 
 async function cachedRequest<T>(url: string, ttlMs: number): Promise<T> {

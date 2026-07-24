@@ -17,7 +17,7 @@ function resultMeta(paper: Paper): string {
   return `${authors} · ${paper.year ?? "Year unknown"} · ${paper.citationCount.toLocaleString()} citations`;
 }
 
-export function ResearchAtlasApp() {
+export function PathwayApp() {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Paper[] | null>(null);
@@ -105,7 +105,7 @@ export function ResearchAtlasApp() {
           <div className="brand-mark" aria-hidden="true">
             RA
           </div>
-          <span className="brand-name">ResearchAtlas</span>
+          <span className="brand-name">Pathway</span>
           <span className="brand-subtitle">Open citation explorer</span>
         </div>
         <a

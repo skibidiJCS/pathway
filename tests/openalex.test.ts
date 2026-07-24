@@ -35,7 +35,7 @@ test("converts OpenAlex metadata and reconstructs an abstract", () => {
       cited_by_count: 41,
       abstract_inverted_index: {
         maps: [2],
-        ResearchAtlas: [0],
+        Pathway: [0],
         citations: [3],
         visualizes: [1],
       },
@@ -47,7 +47,7 @@ test("converts OpenAlex metadata and reconstructs an abstract", () => {
   );
 
   assert.equal(converted.id, "W123");
-  assert.equal(converted.abstract, "ResearchAtlas visualizes maps citations");
+  assert.equal(converted.abstract, "Pathway visualizes maps citations");
   assert.deepEqual(converted.authors, ["A. Author"]);
   assert.equal(converted.source, "Example Journal");
   assert.equal(converted.isOpenAccess, true);

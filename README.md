@@ -1,6 +1,6 @@
-# ResearchAtlas
+# Pathway
 
-ResearchAtlas is a compact citation explorer built with React, Vite, TypeScript,
+Pathway is a compact citation explorer built with React, Vite, TypeScript,
 Cytoscape.js, and OpenAlex. It has no AI, database, authentication, or paid
 services.
 
@@ -12,38 +12,58 @@ Requirements: Node.js 22.13 or newer and a free OpenAlex API key.
 2. Add your key as `OPENALEX_API_KEY`.
 3. Run `npm install`.
 4. Run `npm run dev`.
-5. Open `http://localhost:3000`.
+5. Open the local URL shown in the terminal.
 
-The server-side proxy reads the key. Browser code only calls
-`/api/openalex`; the key is never bundled into the client. OpenAlex permits
-limited keyless use, so the app can also be tried without `.env`, but the free
-key provides a larger daily allowance.
+The Vite development server and Vercel Function both keep the key server-side.
+Browser code only calls `/api/openalex`; the key is never bundled into the
+client.
 
 ## Tests and build
 
 - `npm test` — data conversion, abstract reconstruction, deduplication, graph
   limits, and citation direction.
-- `npm run build` — production build.
-- `npm run lint` — static checks.
+- `npm run build` — type-check and create the production Vite build.
+- `npm run lint` — TypeScript checks.
 
-## Free Cloudflare Pages deployment
+## Deploy to Vercel
 
-1. Push the repository to a Git provider and create a Cloudflare Pages project.
-2. Use `npm run build` as the build command and `dist/client` as the output
-   directory.
-3. In **Settings → Variables and Secrets**, add `OPENALEX_API_KEY` as an
-   encrypted secret for production and preview.
-4. Deploy. The root `functions/api/openalex.ts` file becomes the Pages Function
-   proxy.
+### Dashboard method
 
-For local Pages emulation, build first and run:
+1. Push this folder to a GitHub, GitLab, or Bitbucket repository.
+2. Sign in at [vercel.com](https://vercel.com) and select **Add New → Project**.
+3. Import the repository.
+4. Set **Project Name** to `pathway`.
+5. Confirm **Framework Preset** is **Vite**. The repository already provides:
+   - Build command: `npm run build`
+   - Output directory: `dist`
+6. Open **Environment Variables** and add:
+   - Name: `OPENALEX_API_KEY`
+   - Value: your free OpenAlex API key
+   - Environments: Production, Preview, and Development
+7. Select **Deploy**.
+8. After deployment, open **Settings → Domains** and confirm
+   `pathway.vercel.app` is assigned.
+9. Under **Settings → Deployment Protection**, do not enable Vercel
+   Authentication for all deployments. The production domain will then be
+   publicly accessible without a login.
+
+Vercel assigns `.vercel.app` names on a first-come, first-served basis. Setting
+the project name to `pathway` requests `pathway.vercel.app`, but the exact URL
+cannot be guaranteed until Vercel confirms it is available.
+
+### CLI alternative
+
+From this folder:
 
 ```sh
-npx wrangler pages dev dist/client
+npx vercel
+npx vercel env add OPENALEX_API_KEY production
+npx vercel env add OPENALEX_API_KEY preview
+npx vercel --prod
 ```
 
-The included Worker entry point provides the same proxy when using the Vinext
-development server or a Worker-compatible host.
+Choose `pathway` as the project name when prompted. Never paste the API key into
+source code or commit a `.env` file.
 
 ## Request limits
 
