@@ -46,7 +46,6 @@ function PaperSheet({ paper, active, onSelect }: PaperSheetProps) {
       aria-pressed={active}
       title={paper.title}
     >
-      <span className="paper-binding" aria-hidden="true" />
       <span className="paper-sheet-title">{paper.title}</span>
       <span className="paper-sheet-meta">
         {paper.year ?? "Year unknown"} ·{" "}
