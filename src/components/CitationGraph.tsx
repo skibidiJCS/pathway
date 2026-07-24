@@ -131,16 +131,20 @@ export function CitationGraph({
       <section className="selected-paper-column" aria-label="Selected paper">
         <span className="selected-paper-label">Selected paper</span>
         {selected ? (
-          <PaperSheet
-            paper={selected}
-            active={selected.id === selectedId}
-            onSelect={onSelect}
-          />
+          <button
+            className="selected-paper-summary"
+            type="button"
+            onClick={() => onSelect(selected)}
+            aria-pressed={selected.id === selectedId}
+            title={selected.title}
+          >
+            <span className="selected-paper-title">{selected.title}</span>
+            <span className="selected-paper-meta">
+              {selected.year ?? "Year unknown"} ·{" "}
+              {selected.citationCount.toLocaleString()} citations
+            </span>
+          </button>
         ) : null}
-        <p className="relationship-summary">
-          <span className="reference-text">References</span> are cited by this
-          paper. <span className="citing-text">Citing papers</span> cite it.
-        </p>
       </section>
 
       <PaperGroup

@@ -92,10 +92,12 @@ export function PaperDetails({
               </div>
             </div>
 
-            <h4 className="abstract-heading">Abstract</h4>
-            <p className={`abstract${paper.abstract ? "" : " unavailable"}`}>
-              {paper.abstract ?? "No abstract is available from OpenAlex."}
-            </p>
+            <section className="abstract-section">
+              <h4 className="abstract-heading">Abstract</h4>
+              <p className={`abstract${paper.abstract ? "" : " unavailable"}`}>
+                {paper.abstract ?? "No abstract is available from OpenAlex."}
+              </p>
+            </section>
 
             <div className="detail-actions">
               <a
