@@ -1,5 +1,6 @@
 :root {
-  --theme-duration: 320ms;
+  --theme-duration: 360ms;
+  --theme-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --ink: #18202b;
   --muted: #6c7480;
   --line: #dfe3e8;
@@ -14,7 +15,7 @@
   --header-bg: rgba(255, 255, 255, 0.94);
   --field-bg: #fbfbfc;
   --hover-bg: #f2f4f6;
-  --button-bg: #18202b;
+  --button-bg: #567596;
   --button-text: #fff;
   --card-bg: #fff;
   --card-edge: #cfd5dc;
@@ -36,8 +37,8 @@
   --header-bg: rgba(17, 25, 35, 0.96);
   --field-bg: #0e1620;
   --hover-bg: #1a2531;
-  --button-bg: #d7dbe0;
-  --button-text: #11161c;
+  --button-bg: #7793ad;
+  --button-text: #0b1118;
   --card-bg: #151f2b;
   --card-edge: #354252;
   color-scheme: dark;
@@ -69,8 +70,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   transition:
-    background-color var(--theme-duration) ease,
-    color var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing);
 }
 
 button,
@@ -94,6 +95,20 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+body *:not(.theme-icon) {
+  transition-property:
+    accent-color,
+    background-color,
+    border-color,
+    box-shadow,
+    color,
+    fill,
+    outline-color,
+    stroke;
+  transition-duration: var(--theme-duration);
+  transition-timing-function: var(--theme-easing);
+}
+
 .app-shell {
   width: 100%;
   height: 100dvh;
@@ -113,8 +128,8 @@ a:focus-visible {
   justify-content: space-between;
   gap: 18px;
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing);
 }
 
 .brand {
@@ -257,9 +272,9 @@ a:focus-visible {
   cursor: pointer;
   overflow: hidden;
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease,
-    box-shadow var(--theme-duration) ease,
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing),
+    box-shadow var(--theme-duration) var(--theme-easing),
     transform 180ms ease;
 }
 
@@ -279,8 +294,8 @@ a:focus-visible {
   display: grid;
   place-items: center;
   transition:
-    opacity 260ms ease,
-    transform var(--theme-duration) cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--theme-duration) var(--theme-easing),
+    transform var(--theme-duration) var(--theme-easing);
 }
 
 .theme-icon.moon {
@@ -310,8 +325,8 @@ a:focus-visible {
   background: var(--paper);
   border-bottom: 1px solid var(--line);
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing);
 }
 
 .search-meta-row {
@@ -344,7 +359,7 @@ a:focus-visible {
   font-size: 17px;
   line-height: 1;
   pointer-events: none;
-  transition: color var(--theme-duration) ease;
+  transition: color var(--theme-duration) var(--theme-easing);
 }
 
 .search-input {
@@ -356,15 +371,15 @@ a:focus-visible {
   color: var(--ink);
   padding: 0 42px 0 38px;
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease,
-    color var(--theme-duration) ease,
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing),
     box-shadow 180ms ease;
 }
 
 .search-input::placeholder {
   color: var(--muted);
-  transition: color var(--theme-duration) ease;
+  transition: color var(--theme-duration) var(--theme-easing);
 }
 
 .search-input::-webkit-search-cancel-button {
@@ -389,8 +404,8 @@ a:focus-visible {
   line-height: 1;
   cursor: pointer;
   transition:
-    background-color var(--theme-duration) ease,
-    color var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing);
 }
 
 .input-clear:hover {
@@ -415,8 +430,8 @@ a:focus-visible {
   font-weight: 700;
   cursor: pointer;
   transition:
-    background-color var(--theme-duration) ease,
-    color var(--theme-duration) ease,
+    background-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing),
     filter 150ms ease,
     opacity 150ms ease;
 }
@@ -543,9 +558,9 @@ a:focus-visible {
   padding: 0 7px;
   font-size: 11px;
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease,
-    color var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing);
 }
 
 .year-field {
@@ -581,9 +596,9 @@ a:focus-visible {
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease,
-    color var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing);
 }
 
 .oa-filter input {
@@ -664,10 +679,10 @@ a:focus-visible {
 .merge-notice,
 .app-notice {
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease,
-    color var(--theme-duration) ease,
-    box-shadow var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing),
+    box-shadow var(--theme-duration) var(--theme-easing);
 }
 
 .citation-map {
@@ -762,9 +777,9 @@ a:focus-visible {
   font-size: 9px;
   cursor: pointer;
   transition:
-    background-color var(--theme-duration) ease,
-    border-color var(--theme-duration) ease,
-    color var(--theme-duration) ease;
+    background-color var(--theme-duration) var(--theme-easing),
+    border-color var(--theme-duration) var(--theme-easing),
+    color var(--theme-duration) var(--theme-easing);
 }
 
 .paper-group.reference .paper-group-heading strong {

@@ -425,6 +425,13 @@ export function PathwayApp() {
     setOpenAccessOnly(false);
   };
 
+  const toggleTheme = () => {
+    const nextTheme: Theme =
+      document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = nextTheme;
+    setTheme(nextTheme);
+  };
+
   const handleSave = async (paper: Paper) => {
     const activeAccount = accountRef.current;
     const limit = activeAccount
@@ -655,9 +662,7 @@ export function PathwayApp() {
           <button
             className="theme-toggle"
             type="button"
-            onClick={() =>
-              setTheme((current) => (current === "light" ? "dark" : "light"))
-            }
+            onClick={toggleTheme}
             aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             aria-pressed={theme === "dark"}

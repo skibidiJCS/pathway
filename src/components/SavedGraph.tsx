@@ -28,6 +28,93 @@ function relationshipLabel(
   return `${compactTitle(source, 35)} — ${compactTitle(target, 35)}`;
 }
 
+function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
+  const dark = theme === "dark";
+  const paper = dark ? "#151f2b" : "#ffffff";
+  const paperSelected = dark ? "#1a2531" : "#f2f4f6";
+  const edge = dark ? "#687586" : "#9099a4";
+  const blue = dark ? "#8aa7c4" : "#3f6489";
+  const border = dark ? "#526173" : "#b7c0ca";
+  const selected = dark ? "#c49a6b" : "#94602d";
+  const transition =
+    "background-color, border-color, color, line-color, source-arrow-color, target-arrow-color";
+
+  return [
+    {
+      selector: "node",
+      style: {
+        "background-color": paper,
+        "border-color": border,
+        "border-width": 1,
+        color: blue,
+        "font-size": 10,
+        "font-weight": 600,
+        height: 167,
+        label: "data(label)",
+        shape: "rectangle",
+        "text-halign": "center",
+        "text-max-width": "96px",
+        "text-valign": "center",
+        "text-wrap": "wrap",
+        "transition-duration": 360,
+        "transition-property": transition,
+        "transition-timing-function": "ease-in-out",
+        width: 118,
+      },
+    },
+    {
+      selector: "node:selected",
+      style: {
+        "background-color": paperSelected,
+        "border-color": selected,
+        "border-width": 2,
+      },
+    },
+    {
+      selector: "edge",
+      style: {
+        "curve-style": "bezier",
+        "line-color": edge,
+        "line-style": "solid",
+        "target-arrow-color": blue,
+        "transition-duration": 360,
+        "transition-property": transition,
+        "transition-timing-function": "ease-in-out",
+        width: 1.5,
+      },
+    },
+    {
+      selector: 'edge[direction = "none"]',
+      style: {
+        "line-style": "dashed",
+      },
+    },
+    {
+      selector: 'edge[direction = "forward"]',
+      style: {
+        "target-arrow-shape": "triangle",
+      },
+    },
+    {
+      selector: 'edge[direction = "both"]',
+      style: {
+        "source-arrow-color": blue,
+        "source-arrow-shape": "triangle",
+        "target-arrow-shape": "triangle",
+      },
+    },
+    {
+      selector: "edge:selected",
+      style: {
+        "line-color": selected,
+        "source-arrow-color": selected,
+        "target-arrow-color": selected,
+        width: 3,
+      },
+    },
+  ];
+}
+
 export function SavedGraph({
   collection,
   selectedIds,
@@ -35,6 +122,8 @@ export function SavedGraph({
   onExplore,
 }: SavedGraphProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const graphRef = useRef<cytoscape.Core | null>(null);
+  const themeRef = useRef(theme);
   const [activeRelationshipId, setActiveRelationshipId] = useState("");
   const [activePaperId, setActivePaperId] = useState("");
   const graph = useMemo(
@@ -50,6 +139,7 @@ export function SavedGraph({
       (relationship) => relationship.id === activeRelationshipId,
     ) ?? graph.relationships[0] ?? null;
   const activePaper = papers.get(activePaperId) ?? null;
+  themeRef.current = theme;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -60,14 +150,13 @@ export function SavedGraph({
 
     void import("cytoscape").then(({ default: createGraph }) => {
       if (disposed || !containerRef.current) return;
-      const dark = theme === "dark";
       instance = createGraph({
         container,
         elements: [
           ...graph.papers.map((paper) => ({
             data: {
               id: paper.id,
-              label: compactTitle(paper.title, 34),
+              label: compactTitle(paper.title, 64),
             },
           })),
           ...graph.relationships.map((relationship) => ({
@@ -79,88 +168,29 @@ export function SavedGraph({
             },
           })),
         ],
-        style: [
-          {
-            selector: "node",
-            style: {
-              "background-color": dark ? "#8aa7c4" : "#3f6489",
-              "border-color": dark ? "#d5e0ea" : "#274968",
-              "border-width": 1,
-              color: dark ? "#eef2f7" : "#18202b",
-              "font-size": 9,
-              "font-weight": 600,
-              height: 35,
-              label: "data(label)",
-              "text-background-color": dark ? "#111923" : "#ffffff",
-              "text-background-opacity": 0.9,
-              "text-background-padding": "3px",
-              "text-halign": "center",
-              "text-margin-y": 28,
-              "text-max-width": "110px",
-              "text-valign": "bottom",
-              "text-wrap": "wrap",
-              width: 35,
-            },
-          },
-          {
-            selector: "node:selected",
-            style: {
-              "background-color": dark ? "#c49a6b" : "#94602d",
-              "border-width": 2,
-            },
-          },
-          {
-            selector: "edge",
-            style: {
-              "curve-style": "bezier",
-              "line-color": dark ? "#687586" : "#9099a4",
-              "line-style": "solid",
-              "target-arrow-color": dark ? "#8aa7c4" : "#3f6489",
-              width: 1.5,
-            },
-          },
-          {
-            selector: 'edge[direction = "none"]',
-            style: {
-              "line-style": "dashed",
-            },
-          },
-          {
-            selector: 'edge[direction = "forward"]',
-            style: {
-              "target-arrow-shape": "triangle",
-            },
-          },
-          {
-            selector: 'edge[direction = "both"]',
-            style: {
-              "source-arrow-color": dark ? "#8aa7c4" : "#3f6489",
-              "source-arrow-shape": "triangle",
-              "target-arrow-shape": "triangle",
-            },
-          },
-          {
-            selector: "edge:selected",
-            style: {
-              "line-color": dark ? "#c49a6b" : "#94602d",
-              "source-arrow-color": dark ? "#c49a6b" : "#94602d",
-              "target-arrow-color": dark ? "#c49a6b" : "#94602d",
-              width: 3,
-            },
-          },
-        ],
-        layout: {
-          name: "cose",
-          animate: false,
-          componentSpacing: 80,
-          idealEdgeLength: 155,
-          nodeRepulsion: 120000,
-          padding: 42,
-          randomize: true,
+        style: graphStyles(themeRef.current),
+        layout:
+          graph.relationships.length > 0
+            ? {
+                name: "cose",
+                animate: false,
+                componentSpacing: 110,
+                idealEdgeLength: 210,
+                nodeDimensionsIncludeLabels: true,
+                nodeRepulsion: 360000,
+                padding: 48,
+                randomize: true,
+              }
+            : {
+                name: "grid",
+                avoidOverlap: true,
+                condense: false,
+                padding: 48,
         },
         minZoom: 0.35,
-        maxZoom: 2.2,
+        maxZoom: 1.25,
       });
+      graphRef.current = instance;
       instance.on("tap", "edge", (event) => {
         setActivePaperId("");
         setActiveRelationshipId(event.target.id());
@@ -180,8 +210,15 @@ export function SavedGraph({
       disposed = true;
       observer?.disconnect();
       instance?.destroy();
+      if (graphRef.current === instance) graphRef.current = null;
     };
-  }, [graph, theme]);
+  }, [graph]);
+
+  useEffect(() => {
+    const instance = graphRef.current;
+    if (!instance) return;
+    instance.style().fromJson(graphStyles(theme)).update();
+  }, [theme]);
 
   if (graph.papers.length < 2) {
     return (
