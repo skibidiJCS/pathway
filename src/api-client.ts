@@ -3,6 +3,7 @@
 import type {
   CitationGraphData,
   SearchResponse,
+  UpdatesResponse,
 } from "../lib/research-types";
 
 const CACHE_PREFIX = "pathway:v3:";
@@ -65,4 +66,37 @@ export function loadCitationGraph(id: string): Promise<CitationGraphData> {
     `/api/openalex?mode=graph&id=${encodeURIComponent(id)}`,
     6 * 60 * 60 * 1000,
   );
+}
+
+export async function loadCollectionUpdates(
+  ids: string[],
+  since: string,
+): Promise<UpdatesResponse> {
+  const uniqueIds = [...new Set(ids)].filter(Boolean);
+  const results: UpdatesResponse["results"] = [];
+
+  for (let index = 0; index < uniqueIds.length; index += 25) {
+    const batch = uniqueIds.slice(index, index + 25);
+    const response = await cachedRequest<UpdatesResponse>(
+      `/api/openalex?mode=updates&ids=${encodeURIComponent(batch.join(","))}&since=${encodeURIComponent(since)}`,
+      15 * 60 * 1000,
+    );
+    results.push(...response.results);
+  }
+
+  const seen = new Set<string>();
+  return {
+    results: results
+      .filter((paper) => {
+        if (seen.has(paper.id)) return false;
+        seen.add(paper.id);
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          (b.year ?? 0) - (a.year ?? 0) ||
+          b.citationCount - a.citationCount,
+      )
+      .slice(0, 24),
+  };
 }

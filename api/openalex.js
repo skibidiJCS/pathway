@@ -3,6 +3,7 @@ const OPENALEX_PREFIX = "https://openalex.org/";
 const SEARCH_LIMIT = 12;
 const RELATION_LIMIT = 14;
 const GRAPH_LIMIT = 29;
+const UPDATE_LIMIT = 12;
 const WORK_FIELDS = [
   "id",
   "doi",
@@ -13,6 +14,8 @@ const WORK_FIELDS = [
   "primary_location",
   "best_oa_location",
   "open_access",
+  "primary_topic",
+  "topics",
   "abstract_inverted_index",
 ].join(",");
 
@@ -34,16 +37,54 @@ const ABSTRACT_SYMBOLS = {
   geq: "≥",
 };
 
+const HTML_ENTITIES = {
+  amp: "&",
+  apos: "'",
+  deg: "°",
+  gt: ">",
+  hellip: "…",
+  ldquo: "“",
+  lsquo: "‘",
+  lt: "<",
+  mdash: "—",
+  micro: "µ",
+  minus: "−",
+  nbsp: " ",
+  ndash: "–",
+  quot: '"',
+  rdquo: "”",
+  rsquo: "’",
+  times: "×",
+};
+
+function decodeHtmlEntities(value) {
+  let text = value;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const decoded = text
+      .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
+        String.fromCodePoint(Number.parseInt(code, 16)),
+      )
+      .replace(/&#(\d+);/g, (_, code) =>
+        String.fromCodePoint(Number.parseInt(code, 10)),
+      )
+      .replace(/&([a-z]+);/gi, (match, name) => {
+        return HTML_ENTITIES[name.toLowerCase()] ?? match;
+      });
+    if (decoded === text) break;
+    text = decoded;
+  }
+  return text;
+}
+
 export function cleanAbstractText(value) {
-  let text = value
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&le;/gi, "≤")
-    .replace(/&ge;/gi, "≥")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
+  let text = decodeHtmlEntities(value)
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(
+      /<\/?(?:abstract|br|div|h[1-6]|li|ol|p|section|table|td|th|title|tr|ul)\b[^>]*>/gi,
+      " ",
+    )
+    .replace(/<\/?[a-z][^>]*>/gi, "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\\rule\{[^{}]*\}\{[^{}]*\}/g, "")
     .replace(/\\phantom\{[^{}]*\}/g, "")
     .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "$1/$2");
@@ -66,6 +107,10 @@ export function cleanAbstractText(value) {
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+export function cleanMetadataText(value) {
+  return cleanAbstractText(value);
 }
 
 function sendJson(response, body, status = 200) {
@@ -122,14 +167,31 @@ function toPaper(work, relation = "reference") {
 
   return {
     id,
-    title: work.display_name?.trim() || work.title?.trim() || "Untitled work",
+    title:
+      cleanMetadataText(work.display_name ?? work.title ?? "") ||
+      "Untitled work",
     authors:
       work.authorships
-        ?.map((authorship) => authorship.author?.display_name?.trim())
+        ?.map((authorship) =>
+          cleanMetadataText(authorship.author?.display_name ?? ""),
+        )
         .filter(Boolean) ?? [],
     year:
       typeof work.publication_year === "number" ? work.publication_year : null,
-    source: work.primary_location?.source?.display_name?.trim() || null,
+    source:
+      cleanMetadataText(
+        work.primary_location?.source?.display_name ?? "",
+      ) || null,
+    topics: [
+      ...new Set(
+        [
+          cleanMetadataText(work.primary_topic?.display_name ?? ""),
+          ...(work.topics
+            ?.slice(0, 3)
+            .map((topic) => cleanMetadataText(topic.display_name ?? "")) ?? []),
+        ].filter(Boolean),
+      ),
+    ].slice(0, 3),
     citationCount: Math.max(0, work.cited_by_count ?? 0),
     abstract: reconstructAbstract(work.abstract_inverted_index),
     isOpenAccess: Boolean(work.open_access?.is_oa),
@@ -274,6 +336,25 @@ async function getGraph(id) {
   );
 }
 
+function validDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+async function getUpdates(ids, since) {
+  const data = await openAlexFetch("/works", {
+    filter: `cites:${ids.join("|")},from_publication_date:${since}`,
+    sort: "publication_date:desc",
+    per_page: String(UPDATE_LIMIT),
+    select: WORK_FIELDS,
+  });
+  return {
+    results: (data.results ?? [])
+      .map((work) => toPaper(work, "citing"))
+      .filter((paper) => paper.id)
+      .slice(0, UPDATE_LIMIT),
+  };
+}
+
 export default async function handler(request, response) {
   if (request.method !== "GET") {
     return sendJson(response, { error: "Only GET requests are supported." }, 405);
@@ -306,6 +387,22 @@ export default async function handler(request, response) {
         return sendJson(response, { error: "Invalid OpenAlex work ID." }, 400);
       }
       return sendJson(response, await getGraph(id));
+    }
+
+    if (mode === "updates") {
+      const ids = [
+        ...new Set(
+          (url.searchParams.get("ids") ?? "")
+            .split(",")
+            .map(normalizeOpenAlexId)
+            .filter(Boolean),
+        ),
+      ].slice(0, 25);
+      const since = url.searchParams.get("since") ?? "";
+      if (ids.length === 0 || !validDate(since)) {
+        return sendJson(response, { error: "Invalid update request." }, 400);
+      }
+      return sendJson(response, await getUpdates(ids, since));
     }
 
     return sendJson(response, { error: "Unknown request mode." }, 400);

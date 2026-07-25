@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildCitationGraph,
   cleanAbstractText,
+  cleanMetadataText,
   deduplicatePapers,
   reconstructAbstract,
   toPaper,
@@ -16,6 +17,7 @@ function paper(id: string, relation: Paper["relation"] = "reference"): Paper {
     authors: [],
     year: 2024,
     source: null,
+    topics: [],
     citationCount: 0,
     abstract: null,
     isOpenAccess: false,
@@ -66,6 +68,40 @@ test("cleans common OpenAlex math markup from abstracts", () => {
     ),
     "For γ<1, A_k∼k^γ and ν=∞.",
   );
+});
+
+test("decodes HTML entities and removes embedded tags from metadata", () => {
+  assert.equal(
+    cleanMetadataText(
+      "&amp;lt;title&amp;gt;Method for registration of 3-D shapes&amp;lt;/title&amp;gt;",
+    ),
+    "Method for registration of 3-D shapes",
+  );
+  assert.equal(
+    cleanMetadataText(
+      "The enzymic conversion of &lt;i&gt;all&lt;/i&gt;-cis compounds &#8212; a review",
+    ),
+    "The enzymic conversion of all-cis compounds — a review",
+  );
+});
+
+test("cleans titles, authors, sources, and topics during conversion", () => {
+  const converted = toPaper({
+    id: "https://openalex.org/W456",
+    display_name: "&lt;title&gt;Clean title&lt;/title&gt;",
+    authorships: [
+      { author: { display_name: "&lt;b&gt;Jane Doe&lt;/b&gt;" } },
+    ],
+    primary_location: {
+      source: { display_name: "Journal &amp; Review" },
+    },
+    primary_topic: { display_name: "&lt;i&gt;Shape analysis&lt;/i&gt;" },
+  });
+
+  assert.equal(converted.title, "Clean title");
+  assert.deepEqual(converted.authors, ["Jane Doe"]);
+  assert.equal(converted.source, "Journal & Review");
+  assert.deepEqual(converted.topics, ["Shape analysis"]);
 });
 
 test("deduplicates papers by OpenAlex ID and records both relations", () => {

@@ -13,6 +13,7 @@ const OPENALEX_API = "https://api.openalex.org";
 const SEARCH_LIMIT = 12;
 const RELATION_LIMIT = 14;
 const GRAPH_LIMIT = 29;
+const UPDATE_LIMIT = 12;
 const WORK_FIELDS = [
   "id",
   "doi",
@@ -23,6 +24,8 @@ const WORK_FIELDS = [
   "primary_location",
   "best_oa_location",
   "open_access",
+  "primary_topic",
+  "topics",
   "abstract_inverted_index",
 ].join(",");
 
@@ -146,6 +149,34 @@ async function getGraph(id: string, env: ProxyEnv): Promise<Response> {
   return json(buildCitationGraph(selected, references, citingPapers, GRAPH_LIMIT));
 }
 
+function validDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+async function getUpdates(
+  ids: string[],
+  since: string,
+  env: ProxyEnv,
+): Promise<Response> {
+  const data = await openAlexFetch<{ results?: OpenAlexWork[] }>(
+    "/works",
+    {
+      filter: `cites:${ids.join("|")},from_publication_date:${since}`,
+      sort: "publication_date:desc",
+      per_page: String(UPDATE_LIMIT),
+      select: WORK_FIELDS,
+    },
+    env,
+  );
+
+  return json({
+    results: (data.results ?? [])
+      .map((work) => toPaper(work, "citing"))
+      .filter((paper) => paper.id)
+      .slice(0, UPDATE_LIMIT),
+  });
+}
+
 export async function handleOpenAlexRequest(
   request: Request,
   env: ProxyEnv,
@@ -173,6 +204,22 @@ export async function handleOpenAlexRequest(
       const id = normalizeOpenAlexId(url.searchParams.get("id") ?? "");
       if (!id) return json({ error: "Invalid OpenAlex work ID." }, 400);
       return await getGraph(id, env);
+    }
+
+    if (mode === "updates") {
+      const ids = Array.from(
+        new Set(
+          (url.searchParams.get("ids") ?? "")
+            .split(",")
+            .map(normalizeOpenAlexId)
+            .filter(Boolean),
+        ),
+      ).slice(0, 25);
+      const since = url.searchParams.get("since") ?? "";
+      if (ids.length === 0 || !validDate(since)) {
+        return json({ error: "Invalid update request." }, 400);
+      }
+      return await getUpdates(ids, since, env);
     }
 
     return json({ error: "Unknown request mode." }, 400);

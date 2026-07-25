@@ -1,11 +1,22 @@
 "use client";
 
-import type { Paper } from "../../lib/research-types";
+import type {
+  Paper,
+  ReviewStatus,
+  SavedPaper,
+} from "../../lib/research-types";
 
 interface PaperDetailsProps {
   paper: Paper | null;
   expanded: boolean;
+  savedEntry: SavedPaper | null;
+  collectionFull: boolean;
+  saving: boolean;
   onToggle: () => void;
+  onSave: (paper: Paper) => void;
+  onRemove: (paperId: string) => void;
+  onStatusChange: (paperId: string, status: ReviewStatus) => void;
+  onNoteChange: (paperId: string, note: string) => void;
 }
 
 const relationLabels: Record<Paper["relation"], string> = {
@@ -24,7 +35,14 @@ function authorsText(authors: string[]): string {
 export function PaperDetails({
   paper,
   expanded,
+  savedEntry,
+  collectionFull,
+  saving,
   onToggle,
+  onSave,
+  onRemove,
+  onStatusChange,
+  onNoteChange,
 }: PaperDetailsProps) {
   return (
     <aside
@@ -97,6 +115,59 @@ export function PaperDetails({
               <p className={`abstract${paper.abstract ? "" : " unavailable"}`}>
                 {paper.abstract ?? "No abstract is available from OpenAlex."}
               </p>
+            </section>
+
+            <section className="paper-review-controls">
+              {savedEntry ? (
+                <>
+                  <div className="paper-review-row">
+                    <label>
+                      Status
+                      <select
+                        value={savedEntry.status}
+                        onChange={(event) =>
+                          onStatusChange(
+                            paper.id,
+                            event.target.value as ReviewStatus,
+                          )
+                        }
+                      >
+                        <option value="unread">Unread</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="used">Used</option>
+                      </select>
+                    </label>
+                    <button type="button" onClick={() => onRemove(paper.id)}>
+                      Remove
+                    </button>
+                  </div>
+                  <label className="paper-note-label">
+                    Private note
+                    <textarea
+                      value={savedEntry.note}
+                      onChange={(event) =>
+                        onNoteChange(paper.id, event.target.value)
+                      }
+                      maxLength={2000}
+                      rows={expanded ? 3 : 2}
+                      placeholder="Add a note…"
+                    />
+                  </label>
+                </>
+              ) : (
+                <button
+                  className="save-paper-button"
+                  type="button"
+                  onClick={() => onSave(paper)}
+                  disabled={collectionFull || saving}
+                >
+                  {saving
+                    ? "Saving…"
+                    : collectionFull
+                      ? "Collection limit reached"
+                      : "Save paper"}
+                </button>
+              )}
             </section>
 
             <div className="detail-actions">

@@ -28,6 +28,12 @@ export interface OpenAlexWork {
     oa_status?: string | null;
     oa_url?: string | null;
   } | null;
+  primary_topic?: {
+    display_name?: string | null;
+  } | null;
+  topics?: Array<{
+    display_name?: string | null;
+  }> | null;
 }
 
 const OPENALEX_PREFIX = "https://openalex.org/";
@@ -53,16 +59,54 @@ const ABSTRACT_SYMBOLS: Record<string, string> = {
   geq: "≥",
 };
 
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  apos: "'",
+  deg: "°",
+  gt: ">",
+  hellip: "…",
+  ldquo: "“",
+  lsquo: "‘",
+  lt: "<",
+  mdash: "—",
+  micro: "µ",
+  minus: "−",
+  nbsp: " ",
+  ndash: "–",
+  quot: '"',
+  rdquo: "”",
+  rsquo: "’",
+  times: "×",
+};
+
+function decodeHtmlEntities(value: string): string {
+  let text = value;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const decoded = text
+      .replace(/&#x([0-9a-f]+);/gi, (_, code: string) =>
+        String.fromCodePoint(Number.parseInt(code, 16)),
+      )
+      .replace(/&#(\d+);/g, (_, code: string) =>
+        String.fromCodePoint(Number.parseInt(code, 10)),
+      )
+      .replace(/&([a-z]+);/gi, (match, name: string) => {
+        return HTML_ENTITIES[name.toLowerCase()] ?? match;
+      });
+    if (decoded === text) break;
+    text = decoded;
+  }
+  return text;
+}
+
 export function cleanAbstractText(value: string): string {
-  let text = value
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&le;/gi, "≤")
-    .replace(/&ge;/gi, "≥")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
+  let text = decodeHtmlEntities(value)
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(
+      /<\/?(?:abstract|br|div|h[1-6]|li|ol|p|section|table|td|th|title|tr|ul)\b[^>]*>/gi,
+      " ",
+    )
+    .replace(/<\/?[a-z][^>]*>/gi, "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\\rule\{[^{}]*\}\{[^{}]*\}/g, "")
     .replace(/\\phantom\{[^{}]*\}/g, "")
     .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "$1/$2");
@@ -85,6 +129,10 @@ export function cleanAbstractText(value: string): string {
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+export function cleanMetadataText(value: string): string {
+  return cleanAbstractText(value);
 }
 
 export function normalizeOpenAlexId(value: string): string {
@@ -133,14 +181,31 @@ export function toPaper(
 
   return {
     id,
-    title: work.display_name?.trim() || work.title?.trim() || "Untitled work",
+    title:
+      cleanMetadataText(work.display_name ?? work.title ?? "") ||
+      "Untitled work",
     authors:
       work.authorships
-        ?.map((authorship) => authorship.author?.display_name?.trim())
+        ?.map((authorship) =>
+          cleanMetadataText(authorship.author?.display_name ?? ""),
+        )
         .filter((name): name is string => Boolean(name)) ?? [],
     year:
       typeof work.publication_year === "number" ? work.publication_year : null,
-    source: work.primary_location?.source?.display_name?.trim() || null,
+    source:
+      cleanMetadataText(
+        work.primary_location?.source?.display_name ?? "",
+      ) || null,
+    topics: Array.from(
+      new Set(
+        [
+          cleanMetadataText(work.primary_topic?.display_name ?? ""),
+          ...(work.topics
+            ?.slice(0, 3)
+            .map((topic) => cleanMetadataText(topic.display_name ?? "")) ?? []),
+        ].filter((topic): topic is string => Boolean(topic)),
+      ),
+    ).slice(0, 3),
     citationCount: Math.max(0, work.cited_by_count ?? 0),
     abstract: reconstructAbstract(work.abstract_inverted_index),
     isOpenAccess: Boolean(work.open_access?.is_oa),

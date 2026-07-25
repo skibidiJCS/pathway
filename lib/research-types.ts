@@ -6,6 +6,7 @@ export interface Paper {
   authors: string[];
   year: number | null;
   source: string | null;
+  topics: string[];
   citationCount: number;
   abstract: string | null;
   isOpenAccess: boolean;
@@ -28,5 +29,24 @@ export interface CitationGraphData {
 }
 
 export interface SearchResponse {
+  results: Paper[];
+}
+
+export type ReviewStatus = "unread" | "reviewed" | "used";
+
+export interface SavedPaper {
+  paper: Paper;
+  status: ReviewStatus;
+  note: string;
+  references: Paper[];
+  citingPapers: Paper[];
+  savedAt: string;
+}
+
+export interface CollectionSettings {
+  lastCheckedAt: string | null;
+}
+
+export interface UpdatesResponse {
   results: Paper[];
 }

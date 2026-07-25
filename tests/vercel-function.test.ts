@@ -2,12 +2,22 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import openAlexFunction, {
   cleanAbstractText,
+  cleanMetadataText,
 } from "../api/openalex.js";
 
 test("Vercel function cleans common math markup in abstracts", () => {
   assert.equal(
     cleanAbstractText(String.raw`Growth follows $\ensuremath{\gamma}&gt;1$.`),
     "Growth follows γ>1.",
+  );
+});
+
+test("Vercel function cleans encoded HTML from paper metadata", () => {
+  assert.equal(
+    cleanMetadataText(
+      "&lt;title&gt;Method for registration of 3-D shapes&lt;/title&gt;",
+    ),
+    "Method for registration of 3-D shapes",
   );
 });
 
