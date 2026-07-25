@@ -6,12 +6,45 @@ import type {
   UpdatesResponse,
 } from "../lib/research-types";
 
-const CACHE_PREFIX = "pathway:v3:";
+const CACHE_PREFIX = "pathway:v4:";
+const LEGACY_CACHE_PREFIX = "pathway:v3:";
 const memoryCache = new Map<string, { expires: number; value: unknown }>();
+let storagePrepared = false;
+
+function prepareCacheStorage(now: number): void {
+  if (storagePrepared) return;
+  storagePrepared = true;
+
+  try {
+    const keysToRemove: string[] = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key) continue;
+      if (key.startsWith(LEGACY_CACHE_PREFIX)) {
+        keysToRemove.push(key);
+        continue;
+      }
+      if (key.startsWith(CACHE_PREFIX)) {
+        try {
+          const cached = JSON.parse(localStorage.getItem(key) ?? "") as {
+            expires?: number;
+          };
+          if (!cached.expires || cached.expires <= now) keysToRemove.push(key);
+        } catch {
+          keysToRemove.push(key);
+        }
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // Requests still use the in-memory cache when storage is unavailable.
+  }
+}
 
 async function cachedRequest<T>(url: string, ttlMs: number): Promise<T> {
   const key = `${CACHE_PREFIX}${url}`;
   const now = Date.now();
+  prepareCacheStorage(now);
 
   try {
     const raw = localStorage.getItem(key);
@@ -55,8 +88,9 @@ async function cachedRequest<T>(url: string, ttlMs: number): Promise<T> {
 }
 
 export function searchPapers(query: string): Promise<SearchResponse> {
+  const normalizedQuery = query.trim().replace(/\s+/g, " ");
   return cachedRequest(
-    `/api/openalex?mode=search&q=${encodeURIComponent(query)}`,
+    `/api/openalex?mode=search&q=${encodeURIComponent(normalizedQuery)}`,
     60 * 60 * 1000,
   );
 }

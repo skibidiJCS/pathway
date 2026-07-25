@@ -709,6 +709,16 @@ export function PathwayApp() {
                   aria-label="Paper title, DOI or keyword"
                   autoComplete="off"
                 />
+                {query ? (
+                  <button
+                    className="input-clear search-clear"
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                  >
+                    ×
+                  </button>
+                ) : null}
               </div>
               <button
                 className="search-button"
@@ -730,27 +740,32 @@ export function PathwayApp() {
               {graph ? (
                 <div className="filters" aria-label="Graph filters">
                   <div className="filter-fields">
-                    <input
-                      className="filter-input year-input"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={minYear}
-                      onChange={(event) =>
-                        setMinYear(
-                          event.target.value.replace(/\D/g, "").slice(0, 4),
-                        )
-                      }
-                      placeholder="Publication year"
-                      aria-label="Filter papers published from this year"
-                    />
-                    <button
-                      className="clear-filters"
-                      type="button"
-                      onClick={() => setMinYear("")}
-                    >
-                      Clear
-                    </button>
+                    <div className="year-field">
+                      <input
+                        className="filter-input year-input"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={minYear}
+                        onChange={(event) =>
+                          setMinYear(
+                            event.target.value.replace(/\D/g, "").slice(0, 4),
+                          )
+                        }
+                        placeholder="Publication year"
+                        aria-label="Filter papers published from this year"
+                      />
+                      {minYear ? (
+                        <button
+                          className="input-clear year-clear"
+                          type="button"
+                          onClick={() => setMinYear("")}
+                          aria-label="Clear publication year"
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ) : null}

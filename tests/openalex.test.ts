@@ -83,6 +83,16 @@ test("decodes HTML entities and removes embedded tags from metadata", () => {
     ),
     "The enzymic conversion of all-cis compounds — a review",
   );
+  assert.equal(
+    cleanMetadataText(
+      "FranÃ§oisâ€™s caf&eacute; &mdash; temperature 20&deg;C",
+    ),
+    "François’s café — temperature 20°C",
+  );
+  assert.equal(
+    cleanMetadataText("A\u0000 title with &#99999999; invalid data"),
+    "A title with invalid data",
+  );
 });
 
 test("cleans titles, authors, sources, and topics during conversion", () => {

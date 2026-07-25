@@ -19,6 +19,12 @@ test("Vercel function cleans encoded HTML from paper metadata", () => {
     ),
     "Method for registration of 3-D shapes",
   );
+  assert.equal(
+    cleanMetadataText(
+      "FranÃ§oisâ€™s caf&eacute; &mdash; temperature 20&deg;C",
+    ),
+    "François’s café — temperature 20°C",
+  );
 });
 
 test("Vercel function returns JSON through the Node request-response contract", async () => {

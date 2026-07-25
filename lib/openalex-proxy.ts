@@ -33,7 +33,10 @@ function json(body: unknown, status = 200): Response {
   return Response.json(body, {
     status,
     headers: {
-      "Cache-Control": status === 200 ? "public, max-age=300" : "no-store",
+      "Cache-Control":
+        status === 200
+          ? "public, max-age=300, s-maxage=300, stale-while-revalidate=86400"
+          : "no-store",
       "X-Content-Type-Options": "nosniff",
     },
   });
@@ -193,7 +196,10 @@ export async function handleOpenAlexRequest(
       const query = url.searchParams.get("q")?.trim() ?? "";
       if (query.length < 3 || query.length > 220) {
         return json(
-          { error: "Enter a title or DOI between 3 and 220 characters." },
+          {
+            error:
+              "Enter a title, DOI or keyword between 3 and 220 characters.",
+          },
           400,
         );
       }

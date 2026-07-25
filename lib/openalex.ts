@@ -60,37 +60,201 @@ const ABSTRACT_SYMBOLS: Record<string, string> = {
 };
 
 const HTML_ENTITIES: Record<string, string> = {
+  AElig: "Æ",
+  Aacute: "Á",
+  Acirc: "Â",
+  Agrave: "À",
+  Aring: "Å",
+  Atilde: "Ã",
+  Auml: "Ä",
+  Ccedil: "Ç",
+  Eacute: "É",
+  Ecirc: "Ê",
+  Egrave: "È",
+  Euml: "Ë",
+  Iacute: "Í",
+  Icirc: "Î",
+  Igrave: "Ì",
+  Iuml: "Ï",
+  Ntilde: "Ñ",
+  Oacute: "Ó",
+  Ocirc: "Ô",
+  Ograve: "Ò",
+  Oslash: "Ø",
+  Otilde: "Õ",
+  Ouml: "Ö",
+  Uacute: "Ú",
+  Ucirc: "Û",
+  Ugrave: "Ù",
+  Uuml: "Ü",
+  Yacute: "Ý",
+  aacute: "á",
+  acirc: "â",
+  aelig: "æ",
+  agrave: "à",
+  alpha: "α",
   amp: "&",
   apos: "'",
+  aring: "å",
+  atilde: "ã",
+  auml: "ä",
+  beta: "β",
+  bull: "•",
+  ccedil: "ç",
+  copy: "©",
   deg: "°",
+  delta: "δ",
+  eacute: "é",
+  ecirc: "ê",
+  egrave: "è",
+  epsilon: "ε",
+  equiv: "≡",
+  eta: "η",
+  eth: "ð",
+  euml: "ë",
+  euro: "€",
+  frac12: "½",
+  frac14: "¼",
+  frac34: "¾",
+  gamma: "γ",
+  ge: "≥",
   gt: ">",
   hellip: "…",
+  iacute: "í",
+  icirc: "î",
+  igrave: "ì",
+  iuml: "ï",
+  lambda: "λ",
+  laquo: "«",
+  larr: "←",
+  ldquor: "„",
   ldquo: "“",
+  le: "≤",
   lsquo: "‘",
   lt: "<",
   mdash: "—",
   micro: "µ",
+  middot: "·",
   minus: "−",
+  mu: "μ",
   nbsp: " ",
   ndash: "–",
+  ne: "≠",
+  ntilde: "ñ",
+  oacute: "ó",
+  ocirc: "ô",
+  ograve: "ò",
+  omega: "ω",
+  oslash: "ø",
+  otilde: "õ",
+  ouml: "ö",
+  para: "¶",
+  phi: "φ",
+  pi: "π",
+  plusmn: "±",
+  psi: "ψ",
   quot: '"',
+  raquo: "»",
+  rarr: "→",
+  reg: "®",
   rdquo: "”",
+  rho: "ρ",
   rsquo: "’",
+  sect: "§",
+  sigma: "σ",
+  sup2: "²",
+  sup3: "³",
+  tau: "τ",
+  theta: "θ",
   times: "×",
+  trade: "™",
+  uacute: "ú",
+  ucirc: "û",
+  ugrave: "ù",
+  uml: "¨",
+  uuml: "ü",
+  xi: "ξ",
+  yacute: "ý",
+  yen: "¥",
+  yuml: "ÿ",
+  zeta: "ζ",
 };
+
+const WINDOWS_1252_BYTES: Record<string, number> = {
+  "€": 0x80,
+  "‚": 0x82,
+  "ƒ": 0x83,
+  "„": 0x84,
+  "…": 0x85,
+  "†": 0x86,
+  "‡": 0x87,
+  "ˆ": 0x88,
+  "‰": 0x89,
+  "Š": 0x8a,
+  "‹": 0x8b,
+  "Œ": 0x8c,
+  "Ž": 0x8e,
+  "‘": 0x91,
+  "’": 0x92,
+  "“": 0x93,
+  "”": 0x94,
+  "•": 0x95,
+  "–": 0x96,
+  "—": 0x97,
+  "˜": 0x98,
+  "™": 0x99,
+  "š": 0x9a,
+  "›": 0x9b,
+  "œ": 0x9c,
+  "ž": 0x9e,
+  "Ÿ": 0x9f,
+};
+
+function repairMojibake(value: string): string {
+  if (!/[ÃÂâïð]/.test(value)) return value;
+
+  const bytes: number[] = [];
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint <= 0xff) {
+      bytes.push(codePoint);
+      continue;
+    }
+    const byte = WINDOWS_1252_BYTES[character];
+    if (byte === undefined) return value;
+    bytes.push(byte);
+  }
+
+  try {
+    const decoded = new TextDecoder("utf-8", { fatal: true }).decode(
+      new Uint8Array(bytes),
+    );
+    const suspicious = (text: string) =>
+      (text.match(/[ÃÂâïð�]/g) ?? []).length;
+    return suspicious(decoded) < suspicious(value) ? decoded : value;
+  } catch {
+    return value;
+  }
+}
 
 function decodeHtmlEntities(value: string): string {
   let text = value;
   for (let pass = 0; pass < 3; pass += 1) {
     const decoded = text
-      .replace(/&#x([0-9a-f]+);/gi, (_, code: string) =>
-        String.fromCodePoint(Number.parseInt(code, 16)),
-      )
-      .replace(/&#(\d+);/g, (_, code: string) =>
-        String.fromCodePoint(Number.parseInt(code, 10)),
-      )
-      .replace(/&([a-z]+);/gi, (match, name: string) => {
-        return HTML_ENTITIES[name.toLowerCase()] ?? match;
+      .replace(/&#x([0-9a-f]+);/gi, (match, code: string) => {
+        const point = Number.parseInt(code, 16);
+        return point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff)
+          ? String.fromCodePoint(point)
+          : "";
+      })
+      .replace(/&#(\d+);/g, (match, code: string) => {
+        const point = Number.parseInt(code, 10);
+        return point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff)
+          ? String.fromCodePoint(point)
+          : "";
+      })
+      .replace(/&([a-z][a-z0-9]+);/gi, (match, name: string) => {
+        return HTML_ENTITIES[name] ?? HTML_ENTITIES[name.toLowerCase()] ?? match;
       });
     if (decoded === text) break;
     text = decoded;
@@ -99,14 +263,17 @@ function decodeHtmlEntities(value: string): string {
 }
 
 export function cleanAbstractText(value: string): string {
-  let text = decodeHtmlEntities(value)
+  let text = repairMojibake(decodeHtmlEntities(repairMojibake(value)))
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(
       /<\/?(?:abstract|br|div|h[1-6]|li|ol|p|section|table|td|th|title|tr|ul)\b[^>]*>/gi,
       " ",
     )
     .replace(/<\/?[a-z][^>]*>/gi, "")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(
+      /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g,
+      "",
+    )
     .replace(/\\rule\{[^{}]*\}\{[^{}]*\}/g, "")
     .replace(/\\phantom\{[^{}]*\}/g, "")
     .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "$1/$2");
@@ -128,6 +295,7 @@ export function cleanAbstractText(value: string): string {
     .replace(/[{}$]/g, "")
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/\s+/g, " ")
+    .normalize("NFC")
     .trim();
 }
 
