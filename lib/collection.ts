@@ -10,6 +10,9 @@ import { cleanAbstractText, cleanMetadataText } from "./openalex.ts";
 export const LOCAL_COLLECTION_LIMIT = 10;
 export const CLOUD_COLLECTION_LIMIT = 250;
 export const NOTE_LIMIT = 2000;
+export const FOLDER_LIMIT = 48;
+export const TAG_LIMIT = 8;
+export const TAG_LENGTH_LIMIT = 32;
 
 const GUEST_KEY = "pathway:collection:guest:v1";
 const SETTINGS_KEY = "pathway:collection:settings:v1";
@@ -28,6 +31,28 @@ function isReviewStatus(value: unknown): value is ReviewStatus {
     value === "reviewed" ||
     value === "used"
   );
+}
+
+export function sanitizeFolder(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const folder = cleanMetadataText(value).trim().slice(0, FOLDER_LIMIT);
+  return folder || null;
+}
+
+export function sanitizeTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const candidate of value) {
+    if (typeof candidate !== "string") continue;
+    const tag = cleanMetadataText(candidate).trim().slice(0, TAG_LENGTH_LIMIT);
+    const key = tag.toLocaleLowerCase();
+    if (!tag || seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+    if (tags.length >= TAG_LIMIT) break;
+  }
+  return tags;
 }
 
 export function sanitizePaper(value: unknown): Paper | null {
@@ -120,6 +145,8 @@ export function sanitizeCollection(
           typeof candidate.note === "string"
             ? candidate.note.slice(0, NOTE_LIMIT)
             : "",
+        folder: sanitizeFolder(candidate.folder),
+        tags: sanitizeTags(candidate.tags),
         references: sanitizeRelatedPapers(candidate.references),
         citingPapers: sanitizeRelatedPapers(candidate.citingPapers),
         savedAt:
@@ -236,6 +263,8 @@ export function createSavedPaper(
     paper: withoutAbstract(center, "selected"),
     status: "unread",
     note: "",
+    folder: null,
+    tags: [],
     references,
     citingPapers,
     savedAt: new Date().toISOString(),
@@ -267,6 +296,8 @@ export function mergeCollections(
         existing.citingPapers.length > 0
           ? existing.citingPapers
           : entry.citingPapers,
+      folder: existing.folder ?? entry.folder,
+      tags: existing.tags.length > 0 ? existing.tags : entry.tags,
     });
   }
   return [...merged.values()].slice(0, limit);
@@ -290,6 +321,13 @@ export interface AuditSummary {
   openAccessCount: number;
   sharedReferences: CountedPaper[];
   missingFrequentPapers: CountedPaper[];
+  bridgePapers: BridgePaper[];
+}
+
+export interface BridgePaper extends CountedPaper {
+  savedPaperIds: string[];
+  referencedByCount: number;
+  citesSavedCount: number;
 }
 
 function sortedCounts(values: string[]): CountedLabel[] {
@@ -305,6 +343,15 @@ function sortedCounts(values: string[]): CountedLabel[] {
 export function calculateAudit(collection: SavedPaper[]): AuditSummary {
   const savedIds = new Set(collection.map((entry) => entry.paper.id));
   const usage = new Map<string, { paper: Paper; roots: Set<string> }>();
+  const bridgeUsage = new Map<
+    string,
+    {
+      paper: Paper;
+      roots: Set<string>;
+      referencedBy: Set<string>;
+      citesSaved: Set<string>;
+    }
+  >();
   for (const entry of collection) {
     const perPaper = new Map(entry.references.map((paper) => [paper.id, paper]));
     for (const paper of perPaper.values()) {
@@ -314,6 +361,30 @@ export function calculateAudit(collection: SavedPaper[]): AuditSummary {
       };
       current.roots.add(entry.paper.id);
       usage.set(paper.id, current);
+
+      const bridge = bridgeUsage.get(paper.id) ?? {
+        paper,
+        roots: new Set<string>(),
+        referencedBy: new Set<string>(),
+        citesSaved: new Set<string>(),
+      };
+      bridge.roots.add(entry.paper.id);
+      bridge.referencedBy.add(entry.paper.id);
+      bridgeUsage.set(paper.id, bridge);
+    }
+    const perCitingPaper = new Map(
+      entry.citingPapers.map((paper) => [paper.id, paper]),
+    );
+    for (const paper of perCitingPaper.values()) {
+      const bridge = bridgeUsage.get(paper.id) ?? {
+        paper,
+        roots: new Set<string>(),
+        referencedBy: new Set<string>(),
+        citesSaved: new Set<string>(),
+      };
+      bridge.roots.add(entry.paper.id);
+      bridge.citesSaved.add(entry.paper.id);
+      bridgeUsage.set(paper.id, bridge);
     }
   }
   const sharedReferences = [...usage.values()]
@@ -329,6 +400,24 @@ export function calculateAudit(collection: SavedPaper[]): AuditSummary {
     .map((entry) => entry.paper.citationCount)
     .sort((a, b) => a - b);
   const middle = Math.floor(citations.length / 2);
+  const bridgePapers = [...bridgeUsage.values()]
+    .filter((item) => !savedIds.has(item.paper.id) && item.roots.size >= 2)
+    .map(
+      (item): BridgePaper => ({
+        paper: item.paper,
+        count: item.roots.size,
+        savedPaperIds: [...item.roots],
+        referencedByCount: item.referencedBy.size,
+        citesSavedCount: item.citesSaved.size,
+      }),
+    )
+    .sort(
+      (a, b) =>
+        b.count - a.count ||
+        b.referencedByCount - a.referencedByCount ||
+        b.paper.citationCount - a.paper.citationCount ||
+        a.paper.title.localeCompare(b.paper.title),
+    );
 
   return {
     years: sortedCounts(
@@ -350,6 +439,7 @@ export function calculateAudit(collection: SavedPaper[]): AuditSummary {
     missingFrequentPapers: sharedReferences.filter(
       (item) => !savedIds.has(item.paper.id),
     ),
+    bridgePapers,
   };
 }
 
@@ -362,12 +452,14 @@ export interface PaperComparison {
 }
 
 export type SavedRelationshipDirection = "forward" | "both" | "none";
+export type SavedRelationshipKind = "citation" | "overlap" | "content";
 
 export interface SavedRelationship {
   id: string;
   source: string;
   target: string;
   direction: SavedRelationshipDirection;
+  kind: SavedRelationshipKind;
   directRelationships: string[];
   sharedReferences: Paper[];
   commonCitingPapers: Paper[];
@@ -427,16 +519,6 @@ export function buildSavedRelationships(
       const commonCitingPapers = first.citingPapers.filter((paper) =>
         secondCitingIds.has(paper.id),
       );
-
-      if (
-        !firstCitesSecond &&
-        !secondCitesFirst &&
-        sharedReferences.length === 0 &&
-        commonCitingPapers.length === 0
-      ) {
-        continue;
-      }
-
       const secondTopics = new Set(second.paper.topics.map(topicKey));
       const sharedTopics = first.paper.topics.filter((topic, index, topics) => {
         const key = topicKey(topic);
@@ -445,6 +527,17 @@ export function buildSavedRelationships(
           topics.findIndex((candidate) => topicKey(candidate) === key) === index
         );
       });
+
+      if (
+        !firstCitesSecond &&
+        !secondCitesFirst &&
+        sharedReferences.length === 0 &&
+        commonCitingPapers.length === 0 &&
+        sharedTopics.length === 0
+      ) {
+        continue;
+      }
+
       const directRelationships = [
         ...(firstCitesSecond
           ? [`${first.paper.title} cites ${second.paper.title}`]
@@ -465,6 +558,12 @@ export function buildSavedRelationships(
         target = first.paper.id;
         direction = "forward";
       }
+      const kind: SavedRelationshipKind =
+        firstCitesSecond || secondCitesFirst
+          ? "citation"
+          : sharedReferences.length > 0 || commonCitingPapers.length > 0
+            ? "overlap"
+            : "content";
       const reasons = [
         ...directRelationships,
         ...(sharedReferences.length
@@ -478,7 +577,7 @@ export function buildSavedRelationships(
             ]
           : []),
         ...(sharedTopics.length
-          ? [`Shared topic: ${sharedTopics.slice(0, 2).join(", ")}`]
+          ? [`Shared OpenAlex topic: ${sharedTopics.slice(0, 2).join(", ")}`]
           : []),
       ];
 
@@ -487,6 +586,7 @@ export function buildSavedRelationships(
         source,
         target,
         direction,
+        kind,
         directRelationships,
         sharedReferences,
         commonCitingPapers,
@@ -562,6 +662,8 @@ export function collectionToCsv(collection: SavedPaper[]): string {
       "Open access",
       "DOI",
       "Status",
+      "Folder",
+      "Tags",
       "Notes",
     ],
     ...collection.map((entry) => [
@@ -574,6 +676,8 @@ export function collectionToCsv(collection: SavedPaper[]): string {
       entry.paper.isOpenAccess ? "Yes" : "No",
       entry.paper.doi ?? "",
       entry.status,
+      entry.folder ?? "",
+      entry.tags.join("; "),
       entry.note,
     ]),
   ];

@@ -39,6 +39,8 @@ export interface SavedPaper {
   paper: Paper;
   status: ReviewStatus;
   note: string;
+  folder: string | null;
+  tags: string[];
   references: Paper[];
   citingPapers: Paper[];
   savedAt: string;

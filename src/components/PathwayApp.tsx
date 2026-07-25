@@ -15,6 +15,8 @@ import {
   loadGuestCollection,
   loadGuestSettings,
   mergeCollections,
+  sanitizeFolder,
+  sanitizeTags,
   storeAccountCache,
   storeAccountSettings,
   storeGuestCollection,
@@ -504,6 +506,22 @@ export function PathwayApp() {
     );
   };
 
+  const handleFolderChange = (paperId: string, folder: string | null) => {
+    updateSavedEntry(
+      paperId,
+      (entry) => ({ ...entry, folder: sanitizeFolder(folder) }),
+      300,
+    );
+  };
+
+  const handleTagsChange = (paperId: string, tags: string[]) => {
+    updateSavedEntry(
+      paperId,
+      (entry) => ({ ...entry, tags: sanitizeTags(tags) }),
+      300,
+    );
+  };
+
   const handleSignIn = async () => {
     if (!firebaseConfigured) {
       setNotice(
@@ -722,6 +740,8 @@ export function PathwayApp() {
             onRemove={handleRemove}
             onStatusChange={handleStatusChange}
             onNoteChange={handleNoteChange}
+            onFolderChange={handleFolderChange}
+            onTagsChange={handleTagsChange}
             onCheckUpdates={() => void handleCheckUpdates()}
           />
         </section>

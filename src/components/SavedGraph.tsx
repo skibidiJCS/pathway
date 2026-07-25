@@ -19,6 +19,19 @@ function compactTitle(title: string, maxLength = 54): string {
   return title.length <= maxLength ? title : `${title.slice(0, maxLength - 1)}…`;
 }
 
+function paperNodeLabel(paper: Paper): string {
+  const authors =
+    paper.authors.length === 0
+      ? "Unknown authors"
+      : `${paper.authors.slice(0, 2).join(", ")}${paper.authors.length > 2 ? " et al." : ""}`;
+  return [
+    compactTitle(paper.title, 70),
+    "",
+    compactTitle(authors, 42),
+    String(paper.year ?? "Year unknown"),
+  ].join("\n");
+}
+
 function relationshipLabel(
   relationship: SavedRelationship,
   papers: Map<string, Paper>,
@@ -37,7 +50,7 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
   const border = dark ? "#526173" : "#b7c0ca";
   const selected = dark ? "#c49a6b" : "#94602d";
   const transition =
-    "background-color, border-color, color, line-color, source-arrow-color, target-arrow-color";
+    "background-color, border-color, border-width, color, height, line-color, opacity, source-arrow-color, target-arrow-color, width";
 
   return [
     {
@@ -47,10 +60,12 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
         "border-color": border,
         "border-width": 1,
         color: blue,
+        "font-family": 'Georgia, "Times New Roman", serif',
         "font-size": 10,
-        "font-weight": 600,
+        "font-weight": 500,
         height: 167,
         label: "data(label)",
+        "line-height": 1.25,
         shape: "rectangle",
         "text-halign": "center",
         "text-max-width": "96px",
@@ -68,6 +83,14 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
         "background-color": paperSelected,
         "border-color": selected,
         "border-width": 2,
+        height: 173,
+        width: 122,
+      },
+    },
+    {
+      selector: "node:active",
+      style: {
+        opacity: 0.78,
       },
     },
     {
@@ -84,9 +107,17 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
       },
     },
     {
-      selector: 'edge[direction = "none"]',
+      selector: 'edge[kind = "overlap"]',
       style: {
         "line-style": "dashed",
+      },
+    },
+    {
+      selector: 'edge[kind = "content"]',
+      style: {
+        "line-color": dark ? "#6f879f" : "#8095a9",
+        "line-style": "dotted",
+        width: 1.25,
       },
     },
     {
@@ -156,7 +187,7 @@ export function SavedGraph({
           ...graph.papers.map((paper) => ({
             data: {
               id: paper.id,
-              label: compactTitle(paper.title, 64),
+              label: paperNodeLabel(paper),
             },
           })),
           ...graph.relationships.map((relationship) => ({
@@ -165,6 +196,7 @@ export function SavedGraph({
               source: relationship.source,
               target: relationship.target,
               direction: relationship.direction,
+              kind: relationship.kind,
             },
           })),
         ],
@@ -263,7 +295,8 @@ export function SavedGraph({
             <span className="saved-map-kicker">No links found</span>
             <h3>The selected papers are disconnected.</h3>
             <p>
-              Their stored references and citing-paper lists do not overlap.
+              Their stored citation neighborhoods and OpenAlex topics do not
+              overlap.
             </p>
           </>
         )}

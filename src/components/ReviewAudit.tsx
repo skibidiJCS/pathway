@@ -6,7 +6,10 @@ import {
   collectionToBibtex,
   collectionToCsv,
   compareSavedPapers,
+  sanitizeFolder,
+  sanitizeTags,
 } from "../../lib/collection";
+import type { BridgePaper } from "../../lib/collection";
 import type {
   Paper,
   ReviewStatus,
@@ -26,6 +29,8 @@ interface ReviewAuditProps {
   onRemove: (paperId: string) => void;
   onStatusChange: (paperId: string, status: ReviewStatus) => void;
   onNoteChange: (paperId: string, note: string) => void;
+  onFolderChange: (paperId: string, folder: string | null) => void;
+  onTagsChange: (paperId: string, tags: string[]) => void;
   onCheckUpdates: () => void;
 }
 
@@ -62,12 +67,16 @@ export function ReviewAudit({
   onRemove,
   onStatusChange,
   onNoteChange,
+  onFolderChange,
+  onTagsChange,
   onCheckUpdates,
 }: ReviewAuditProps) {
   const audit = useMemo(() => calculateAudit(collection), [collection]);
   const [firstId, setFirstId] = useState(collection[0]?.paper.id ?? "");
   const [secondId, setSecondId] = useState(collection[1]?.paper.id ?? "");
   const [mapOpen, setMapOpen] = useState(false);
+  const [folderFilter, setFolderFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
   const [mappedIds, setMappedIds] = useState<string[]>(() =>
     collection.slice(0, 25).map((entry) => entry.paper.id),
   );
@@ -103,6 +112,34 @@ export function ReviewAudit({
       ? compareSavedPapers(first, second)
       : null;
   }, [collection, firstId, secondId]);
+  const folders = useMemo(
+    () =>
+      [...new Set(collection.flatMap((entry) => entry.folder ?? []))].sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [collection],
+  );
+  const tags = useMemo(
+    () =>
+      [...new Set(collection.flatMap((entry) => entry.tags))].sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    [collection],
+  );
+  const visibleCollection = useMemo(
+    () =>
+      collection.filter(
+        (entry) =>
+          (!folderFilter || entry.folder === folderFilter) &&
+          (!tagFilter || entry.tags.includes(tagFilter)),
+      ),
+    [collection, folderFilter, tagFilter],
+  );
+
+  useEffect(() => {
+    if (folderFilter && !folders.includes(folderFilter)) setFolderFilter("");
+    if (tagFilter && !tags.includes(tagFilter)) setTagFilter("");
+  }, [folderFilter, folders, tagFilter, tags]);
 
   if (collection.length === 0) {
     return (
@@ -229,7 +266,8 @@ export function ReviewAudit({
               <h2>Saved paper map</h2>
               <p>
                 Select up to 25 papers. Arrows show direct citations; dashed
-                lines show shared references or citing papers.
+                lines show shared citation neighborhoods; dotted lines show
+                shared OpenAlex topics.
               </p>
             </div>
             <span>{mappedIds.length} selected</span>
@@ -263,66 +301,72 @@ export function ReviewAudit({
             onExplore={onExplore}
           />
           <p className="saved-map-note">
-            Connections use the citation neighborhoods stored when each paper
-            was saved.
+            Connections use stored citation neighborhoods and OpenAlex topic
+            metadata.
           </p>
         </section>
       ) : null}
 
       <div className="review-layout">
         <section className="collection-section">
-          <h2>Saved collection</h2>
-          <div className="collection-list">
-            {collection.map((entry, index) => (
-              <article className="collection-row" key={entry.paper.id}>
-                <span className="collection-index">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div className="collection-main">
-                  <button
-                    type="button"
-                    className="collection-title"
-                    onClick={() => onExplore(entry.paper)}
-                  >
-                    {entry.paper.title}
-                  </button>
-                  <span className="collection-meta">
-                    {entry.paper.year ?? "Year unknown"} ·{" "}
-                    {entry.paper.citationCount.toLocaleString()} citations ·{" "}
-                    {entry.paper.isOpenAccess ? "Open access" : "Closed"}
-                  </span>
-                  <textarea
-                    value={entry.note}
-                    onChange={(event) =>
-                      onNoteChange(entry.paper.id, event.target.value)
-                    }
-                    aria-label={`Private note for ${entry.paper.title}`}
-                    placeholder="Private note…"
-                    maxLength={2000}
-                    rows={1}
-                  />
-                </div>
-                <div className="collection-actions">
-                  <select
-                    value={entry.status}
-                    onChange={(event) =>
-                      onStatusChange(
-                        entry.paper.id,
-                        event.target.value as ReviewStatus,
-                      )
-                    }
-                    aria-label={`Review status for ${entry.paper.title}`}
-                  >
-                    <option value="unread">Unread</option>
-                    <option value="reviewed">Reviewed</option>
-                    <option value="used">Used</option>
-                  </select>
-                  <button type="button" onClick={() => onRemove(entry.paper.id)}>
-                    Remove
-                  </button>
-                </div>
-              </article>
+          <div className="collection-heading">
+            <h2>Saved collection</h2>
+            <span>
+              {visibleCollection.length === collection.length
+                ? `${collection.length} papers`
+                : `${visibleCollection.length} of ${collection.length}`}
+            </span>
+          </div>
+          <div className="collection-filters" aria-label="Collection filters">
+            <select
+              value={folderFilter}
+              onChange={(event) => setFolderFilter(event.target.value)}
+              aria-label="Filter saved papers by folder"
+            >
+              <option value="">All folders</option>
+              {folders.map((folder) => (
+                <option key={folder} value={folder}>
+                  {folder}
+                </option>
+              ))}
+            </select>
+            <select
+              value={tagFilter}
+              onChange={(event) => setTagFilter(event.target.value)}
+              aria-label="Filter saved papers by tag"
+            >
+              <option value="">All tags</option>
+              {tags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+          </div>
+          <datalist id="pathway-folder-options">
+            {folders.map((folder) => (
+              <option key={folder} value={folder} />
             ))}
+          </datalist>
+          <div className="collection-list">
+            {visibleCollection.map((entry, index) => (
+              <CollectionRow
+                key={entry.paper.id}
+                entry={entry}
+                index={index}
+                onExplore={onExplore}
+                onRemove={onRemove}
+                onStatusChange={onStatusChange}
+                onNoteChange={onNoteChange}
+                onFolderChange={onFolderChange}
+                onTagsChange={onTagsChange}
+              />
+            ))}
+            {visibleCollection.length === 0 ? (
+              <p className="collection-filter-empty">
+                No papers match these filters.
+              </p>
+            ) : null}
           </div>
         </section>
 
@@ -353,6 +397,18 @@ export function ReviewAudit({
           </section>
 
           <section className="audit-section">
+            <h2>Bridge papers</h2>
+            <p className="audit-section-intro">
+              Papers connecting at least two saved papers through their stored
+              references or citing-paper lists.
+            </p>
+            <BridgePaperList
+              papers={audit.bridgePapers.slice(0, 8)}
+              onExplore={onExplore}
+            />
+          </section>
+
+          <section className="audit-section">
             <h2>Reference overlap</h2>
             <div className="coverage-grid">
               <div>
@@ -364,9 +420,7 @@ export function ReviewAudit({
                 />
               </div>
               <div>
-                <h3>
-                  Missing frequent papers ({audit.missingFrequentPapers.length})
-                </h3>
+                <h3>Strongest omissions</h3>
                 <AuditPaperList
                   papers={audit.missingFrequentPapers.slice(0, 6)}
                   empty="No repeatedly cited omissions are visible yet."
@@ -446,6 +500,163 @@ export function ReviewAudit({
         </div>
       </div>
     </section>
+  );
+}
+
+function CollectionRow({
+  entry,
+  index,
+  onExplore,
+  onRemove,
+  onStatusChange,
+  onNoteChange,
+  onFolderChange,
+  onTagsChange,
+}: {
+  entry: SavedPaper;
+  index: number;
+  onExplore: (paper: Paper) => void;
+  onRemove: (paperId: string) => void;
+  onStatusChange: (paperId: string, status: ReviewStatus) => void;
+  onNoteChange: (paperId: string, note: string) => void;
+  onFolderChange: (paperId: string, folder: string | null) => void;
+  onTagsChange: (paperId: string, tags: string[]) => void;
+}) {
+  const [folderDraft, setFolderDraft] = useState(entry.folder ?? "");
+  const [tagsDraft, setTagsDraft] = useState(entry.tags.join(", "));
+
+  useEffect(() => setFolderDraft(entry.folder ?? ""), [entry.folder]);
+  useEffect(() => setTagsDraft(entry.tags.join(", ")), [entry.tags]);
+
+  return (
+    <article className="collection-row">
+      <span className="collection-index">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <div className="collection-main">
+        <button
+          type="button"
+          className="collection-title"
+          onClick={() => onExplore(entry.paper)}
+        >
+          {entry.paper.title}
+        </button>
+        <span className="collection-meta">
+          {entry.paper.year ?? "Year unknown"} ·{" "}
+          {entry.paper.citationCount.toLocaleString()} citations ·{" "}
+          {entry.paper.isOpenAccess ? "Open access" : "Closed"}
+        </span>
+        <div className="collection-organize">
+          <label>
+            <span>Folder</span>
+            <input
+              type="text"
+              value={folderDraft}
+              list="pathway-folder-options"
+              onChange={(event) => setFolderDraft(event.target.value)}
+              onBlur={() =>
+                onFolderChange(entry.paper.id, sanitizeFolder(folderDraft))
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+              }}
+              placeholder="Add folder"
+              maxLength={48}
+              aria-label={`Folder for ${entry.paper.title}`}
+            />
+          </label>
+          <label>
+            <span>Tags</span>
+            <input
+              type="text"
+              value={tagsDraft}
+              onChange={(event) => setTagsDraft(event.target.value)}
+              onBlur={() =>
+                onTagsChange(
+                  entry.paper.id,
+                  sanitizeTags(tagsDraft.split(",")),
+                )
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+              }}
+              placeholder="policy, methods"
+              maxLength={271}
+              aria-label={`Tags for ${entry.paper.title}`}
+            />
+          </label>
+        </div>
+        <textarea
+          value={entry.note}
+          onChange={(event) =>
+            onNoteChange(entry.paper.id, event.target.value)
+          }
+          aria-label={`Private note for ${entry.paper.title}`}
+          placeholder="Private note…"
+          maxLength={2000}
+          rows={1}
+        />
+      </div>
+      <div className="collection-actions">
+        <select
+          value={entry.status}
+          onChange={(event) =>
+            onStatusChange(
+              entry.paper.id,
+              event.target.value as ReviewStatus,
+            )
+          }
+          aria-label={`Review status for ${entry.paper.title}`}
+        >
+          <option value="unread">Unread</option>
+          <option value="reviewed">Reviewed</option>
+          <option value="used">Used</option>
+        </select>
+        <button type="button" onClick={() => onRemove(entry.paper.id)}>
+          Remove
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function BridgePaperList({
+  papers,
+  onExplore,
+}: {
+  papers: BridgePaper[];
+  onExplore: (paper: Paper) => void;
+}) {
+  if (papers.length === 0) {
+    return (
+      <p className="audit-empty-text">
+        No bridge papers are visible in the saved neighborhoods yet.
+      </p>
+    );
+  }
+  return (
+    <ul className="bridge-paper-list">
+      {papers.map((item) => (
+        <li key={item.paper.id}>
+          <button
+            type="button"
+            onClick={() => onExplore(item.paper)}
+            title={item.paper.title}
+          >
+            {compactTitle(item.paper.title)}
+          </button>
+          <span>
+            Connects {item.count} saved papers
+            {item.referencedByCount
+              ? ` · cited by ${item.referencedByCount}`
+              : ""}
+            {item.citesSavedCount
+              ? ` · cites ${item.citesSavedCount}`
+              : ""}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

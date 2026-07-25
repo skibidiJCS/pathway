@@ -7,6 +7,8 @@ import {
   compareSavedPapers,
   mergeCollections,
   sanitizeCollection,
+  sanitizeFolder,
+  sanitizeTags,
 } from "../lib/collection.ts";
 import type { Paper, SavedPaper } from "../lib/research-types.ts";
 
@@ -41,6 +43,8 @@ function saved(
     paper: root,
     status: "unread",
     note: "",
+    folder: null,
+    tags: [],
     references,
     citingPapers,
     savedAt: "2026-07-24T00:00:00.000Z",
@@ -75,6 +79,30 @@ test("audit summarizes coverage and finds frequently shared missing references",
   assert.equal(audit.sharedReferences[0].paper.id, "X");
   assert.equal(audit.sharedReferences[0].count, 3);
   assert.equal(audit.missingFrequentPapers[0].paper.id, "X");
+  assert.equal(audit.bridgePapers[0].paper.id, "X");
+  assert.equal(audit.bridgePapers[0].count, 3);
+  assert.equal(audit.bridgePapers[0].referencedByCount, 3);
+  assert.equal(audit.bridgePapers[0].citesSavedCount, 0);
+});
+
+test("bridge papers include common citers and exclude saved papers", () => {
+  const first = paper("A");
+  const second = paper("B");
+  const bridge = paper("X", 75);
+  const collection = [
+    saved(first, [], [bridge]),
+    saved(second, [], [bridge]),
+    saved(bridge),
+  ];
+
+  assert.deepEqual(calculateAudit(collection).bridgePapers, []);
+
+  const withoutBridge = collection.slice(0, 2);
+  const [candidate] = calculateAudit(withoutBridge).bridgePapers;
+  assert.equal(candidate.paper.id, "X");
+  assert.equal(candidate.count, 2);
+  assert.equal(candidate.referencedByCount, 0);
+  assert.equal(candidate.citesSavedCount, 2);
 });
 
 test("comparison separates shared and unique links and detects direct citations", () => {
@@ -116,7 +144,7 @@ test("comparison separates shared and unique links and detects direct citations"
   ]);
 });
 
-test("saved-paper map links only citation-supported relationships with correct direction", () => {
+test("saved-paper map links citations and shared content with correct meaning", () => {
   const firstPaper = paper("A", 4, ["Policy"]);
   const secondPaper = paper("B", 8, ["Policy", "Law"]);
   const thirdPaper = paper("C", 2, ["Law"]);
@@ -134,13 +162,23 @@ test("saved-paper map links only citation-supported relationships with correct d
     graph.papers.map((item) => item.id),
     ["A", "B", "C"],
   );
-  assert.equal(graph.relationships.length, 1);
-  assert.equal(graph.relationships[0].source, "A");
-  assert.equal(graph.relationships[0].target, "B");
-  assert.equal(graph.relationships[0].direction, "forward");
-  assert.equal(graph.relationships[0].sharedReferences[0].id, "X");
-  assert.equal(graph.relationships[0].commonCitingPapers[0].id, "Y");
-  assert.deepEqual(graph.relationships[0].sharedTopics, ["Policy"]);
+  assert.equal(graph.relationships.length, 2);
+  const citation = graph.relationships.find(
+    (relationship) => relationship.kind === "citation",
+  );
+  const content = graph.relationships.find(
+    (relationship) => relationship.kind === "content",
+  );
+  assert.equal(citation?.source, "A");
+  assert.equal(citation?.target, "B");
+  assert.equal(citation?.direction, "forward");
+  assert.equal(citation?.sharedReferences[0].id, "X");
+  assert.equal(citation?.commonCitingPapers[0].id, "Y");
+  assert.deepEqual(citation?.sharedTopics, ["Policy"]);
+  assert.equal(content?.source, "B");
+  assert.equal(content?.target, "C");
+  assert.equal(content?.direction, "none");
+  assert.deepEqual(content?.reasons, ["Shared OpenAlex topic: Law"]);
 });
 
 test("saved-paper map detects direct citations from the inverse citing list", () => {
@@ -154,6 +192,7 @@ test("saved-paper map detects direct citations from the inverse citing list", ()
   assert.equal(graph.relationships.length, 1);
   assert.equal(graph.relationships[0].source, "A");
   assert.equal(graph.relationships[0].target, "B");
+  assert.equal(graph.relationships[0].kind, "citation");
   assert.deepEqual(graph.relationships[0].directRelationships, [
     "Paper A cites Paper B",
   ]);
@@ -175,9 +214,33 @@ test("cached collections are cleaned when loaded", () => {
   corrupted.paper.title =
     "&lt;title&gt;Method for registration of 3-D shapes&lt;/title&gt;";
   corrupted.paper.authors = ["&lt;b&gt;Paul J. Besl&lt;/b&gt;"];
+  corrupted.folder = "  &lt;b&gt;Methods&lt;/b&gt;  ";
+  corrupted.tags = [" Policy ", "policy", "&lt;i&gt;Law&lt;/i&gt;"];
 
   const [cleaned] = sanitizeCollection([corrupted]);
 
   assert.equal(cleaned.paper.title, "Method for registration of 3-D shapes");
   assert.deepEqual(cleaned.paper.authors, ["Paul J. Besl"]);
+  assert.equal(cleaned.folder, "Methods");
+  assert.deepEqual(cleaned.tags, ["Policy", "Law"]);
+});
+
+test("folders and tags are normalized and capped", () => {
+  assert.equal(sanitizeFolder("  Reading list  "), "Reading list");
+  assert.equal(sanitizeFolder("   "), null);
+  assert.deepEqual(
+    sanitizeTags([
+      "Methods",
+      " methods ",
+      "Policy",
+      "Law",
+      "History",
+      "Review",
+      "Theory",
+      "Data",
+      "Extra",
+      "Ignored",
+    ]),
+    ["Methods", "Policy", "Law", "History", "Review", "Theory", "Data", "Extra"],
+  );
 });
