@@ -38,7 +38,6 @@ type SyncState = "idle" | "loading" | "syncing" | "ready" | "error";
 type Theme = "light" | "dark";
 type View = "explore" | "review";
 
-const CURRENT_YEAR = new Date().getFullYear();
 const SEARCH_RESULT_LIMIT = 12;
 const GRAPH_PAPER_LIMIT = 29;
 
@@ -66,7 +65,6 @@ export function PathwayApp() {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [minYear, setMinYear] = useState("");
-  const [minCitations, setMinCitations] = useState("");
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
@@ -201,14 +199,12 @@ export function PathwayApp() {
   const visibleNodes = useMemo(() => {
     if (!graph) return [];
     const year = Number(minYear);
-    const citations = Number(minCitations);
     return graph.nodes.filter((paper) => {
       if (paper.id === graph.centerId) return true;
       if (minYear && (paper.year === null || paper.year < year)) return false;
-      if (minCitations && paper.citationCount < citations) return false;
       return true;
     });
-  }, [graph, minYear, minCitations]);
+  }, [graph, minYear]);
 
   const collectionLimit = account
     ? CLOUD_COLLECTION_LIMIT
@@ -362,7 +358,6 @@ export function PathwayApp() {
     setSelectedPaper(paper);
     setDetailsExpanded(false);
     setMinYear("");
-    setMinCitations("");
 
     try {
       const nextGraph = await loadCitationGraph(paper.id);
@@ -401,7 +396,6 @@ export function PathwayApp() {
     setSelectedPaper(null);
     setDetailsExpanded(false);
     setMinYear("");
-    setMinCitations("");
   };
 
   const handleSave = async (paper: Paper) => {
@@ -566,15 +560,6 @@ export function PathwayApp() {
     }
   };
 
-  const stepMinYear = (direction: -1 | 1) => {
-    setMinYear((current) => {
-      if (!current) return String(CURRENT_YEAR + direction);
-      const parsed = Number(current);
-      const next = Number.isFinite(parsed) ? parsed + direction : CURRENT_YEAR;
-      return String(Math.min(2100, Math.max(1000, next)));
-    });
-  };
-
   return (
     <main className="app-shell">
       <header className="site-header">
@@ -720,8 +705,8 @@ export function PathwayApp() {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search by paper title or DOI"
-                  aria-label="Paper title or DOI"
+                  placeholder="Search by title, DOI or keyword"
+                  aria-label="Paper title, DOI or keyword"
                   autoComplete="off"
                 />
               </div>
@@ -745,58 +730,24 @@ export function PathwayApp() {
               {graph ? (
                 <div className="filters" aria-label="Graph filters">
                   <div className="filter-fields">
-                    <label className="filter-label">
-                      Year from
-                      <span className="year-control">
-                        <input
-                          className="filter-input year-input"
-                          type="number"
-                          inputMode="numeric"
-                          min="1000"
-                          max="2100"
-                          value={minYear}
-                          onChange={(event) => setMinYear(event.target.value)}
-                          placeholder="Any"
-                        />
-                        <span className="year-step-buttons">
-                          <button
-                            type="button"
-                            onClick={() => stepMinYear(1)}
-                            aria-label="Increase minimum year"
-                          >
-                            +
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => stepMinYear(-1)}
-                            aria-label="Decrease minimum year"
-                          >
-                            −
-                          </button>
-                        </span>
-                      </span>
-                    </label>
-                    <label className="filter-label">
-                      Min. citations
-                      <input
-                        className="filter-input"
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        value={minCitations}
-                        onChange={(event) =>
-                          setMinCitations(event.target.value)
-                        }
-                        placeholder="Any"
-                      />
-                    </label>
+                    <input
+                      className="filter-input year-input"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={minYear}
+                      onChange={(event) =>
+                        setMinYear(
+                          event.target.value.replace(/\D/g, "").slice(0, 4),
+                        )
+                      }
+                      placeholder="Publication year"
+                      aria-label="Filter papers published from this year"
+                    />
                     <button
                       className="clear-filters"
                       type="button"
-                      onClick={() => {
-                        setMinYear("");
-                        setMinCitations("");
-                      }}
+                      onClick={() => setMinYear("")}
                     >
                       Clear
                     </button>

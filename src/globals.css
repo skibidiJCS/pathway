@@ -507,52 +507,8 @@ a:focus-visible {
   font-size: 11px;
 }
 
-.year-control {
-  display: flex;
-  align-items: stretch;
-}
-
 .year-input {
-  width: 68px;
-  border-radius: 6px 0 0 6px;
-  appearance: textfield;
-}
-
-.year-input::-webkit-inner-spin-button,
-.year-input::-webkit-outer-spin-button {
-  margin: 0;
-  appearance: none;
-}
-
-.year-step-buttons {
-  width: 24px;
-  border: 1px solid var(--card-edge);
-  border-left: 0;
-  border-radius: 0 6px 6px 0;
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  overflow: hidden;
-}
-
-.year-step-buttons button {
-  border: 0;
-  display: grid;
-  place-items: center;
-  background: var(--field-bg);
-  color: var(--muted);
-  padding: 0;
-  font-size: 10px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.year-step-buttons button + button {
-  border-top: 1px solid var(--card-edge);
-}
-
-.year-step-buttons button:hover {
-  background: var(--hover-bg);
-  color: var(--ink);
+  width: 108px;
 }
 
 .clear-filters {
@@ -1702,7 +1658,7 @@ a:focus-visible {
   }
 
   .year-input {
-    width: 68px;
+    width: 108px;
   }
 
   .citation-map,
