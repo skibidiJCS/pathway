@@ -428,6 +428,26 @@ function extractDoi(query) {
   return /^10\.\d{4,9}\/\S+$/i.test(cleaned) ? cleaned : null;
 }
 
+function normalizedName(value) {
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function looksLikeFullName(query) {
+  const words = normalizedName(query).split(" ").filter(Boolean);
+  return (
+    words.length >= 2 &&
+    words.length <= 6 &&
+    query.length <= 90 &&
+    !/\d/.test(query)
+  );
+}
+
 async function openAlexFetch(path, params) {
   const url = new URL(path, OPENALEX_API);
   for (const [key, value] of Object.entries(params)) {
@@ -452,6 +472,22 @@ async function openAlexFetch(path, params) {
   return response.json();
 }
 
+async function findExactAuthor(query) {
+  if (!looksLikeFullName(query)) return null;
+  const data = await openAlexFetch("/autocomplete/authors", { q: query });
+  const queryName = normalizedName(query);
+  return (
+    (data.results ?? [])
+      .filter(
+        (author) =>
+          author.id &&
+          author.display_name &&
+          normalizedName(author.display_name) === queryName,
+      )
+      .sort((a, b) => (b.works_count ?? 0) - (a.works_count ?? 0))[0] ?? null
+  );
+}
+
 async function searchWorks(query) {
   const doi = extractDoi(query);
   if (doi) {
@@ -465,6 +501,26 @@ async function searchWorks(query) {
         return { results: [] };
       }
       throw error;
+    }
+  }
+
+  const author = await findExactAuthor(query);
+  if (author?.id && author.display_name) {
+    const authorId = author.id.match(/A\d+$/i)?.[0];
+    if (authorId) {
+      const data = await openAlexFetch("/works", {
+        filter: `author.id:${authorId}`,
+        sort: "cited_by_count:desc",
+        per_page: String(SEARCH_LIMIT),
+        select: WORK_FIELDS,
+      });
+      return {
+        matchedAuthor: author.display_name,
+        results: (data.results ?? [])
+          .map((work) => toPaper(work, "selected"))
+          .filter((paper) => paper.id)
+          .slice(0, SEARCH_LIMIT),
+      };
     }
   }
 
@@ -545,7 +601,7 @@ export default async function handler(request, response) {
           response,
           {
             error:
-              "Enter a title, DOI or keyword between 3 and 220 characters.",
+              "Enter a title, DOI, keyword or author between 3 and 220 characters.",
           },
           400,
         );

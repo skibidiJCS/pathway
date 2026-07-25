@@ -1,5 +1,10 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import {
+  sortCitationPapers,
+  type PaperSort,
+} from "../../lib/graph-view";
 import type { CitationGraphData, Paper } from "../../lib/research-types";
 
 interface CitationGraphProps {
@@ -56,15 +61,19 @@ function PaperSheet({ paper, active, onSelect }: PaperSheetProps) {
 interface PaperGroupProps {
   papers: Paper[];
   relation: "reference" | "citing";
+  sort: PaperSort;
   selectedId: string;
   onSelect: (paper: Paper) => void;
+  onSort: (sort: PaperSort) => void;
 }
 
 function PaperGroup({
   papers,
   relation,
+  sort,
   selectedId,
   onSelect,
+  onSort,
 }: PaperGroupProps) {
   const isReference = relation === "reference";
 
@@ -74,12 +83,24 @@ function PaperGroup({
       aria-label={isReference ? "References" : "Citing papers"}
     >
       <header className="paper-group-heading">
-        <strong>{groupLabel(papers.length, relation)}</strong>
-        <span>
-          {isReference
-            ? "The selected paper cites these"
-            : "These papers cite the selected paper"}
-        </span>
+        <div>
+          <strong>{groupLabel(papers.length, relation)}</strong>
+          <span>
+            {isReference
+              ? "The selected paper cites these"
+              : "These papers cite the selected paper"}
+          </span>
+        </div>
+        <select
+          value={sort}
+          onChange={(event) => onSort(event.target.value as PaperSort)}
+          aria-label={`Sort ${isReference ? "references" : "citing papers"}`}
+        >
+          <option value="relevance">Relevance</option>
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="most-cited">Most cited</option>
+        </select>
       </header>
       {papers.length > 0 ? (
         <div className="paper-grid">
@@ -108,12 +129,39 @@ export function CitationGraph({
   theme,
   onSelect,
 }: CitationGraphProps) {
-  const references = relationPapers(visibleNodes, "reference");
-  const citing = relationPapers(visibleNodes, "citing");
+  const [referenceSort, setReferenceSort] = useState<PaperSort>("relevance");
+  const [citingSort, setCitingSort] = useState<PaperSort>("relevance");
   const selected =
     visibleNodes.find((paper) => paper.id === graph.centerId) ??
     graph.nodes.find((paper) => paper.id === graph.centerId) ??
     null;
+  const references = useMemo(
+    () =>
+      selected
+        ? sortCitationPapers(
+            relationPapers(visibleNodes, "reference"),
+            referenceSort,
+            selected,
+          )
+        : [],
+    [referenceSort, selected, visibleNodes],
+  );
+  const citing = useMemo(
+    () =>
+      selected
+        ? sortCitationPapers(
+            relationPapers(visibleNodes, "citing"),
+            citingSort,
+            selected,
+          )
+        : [],
+    [citingSort, selected, visibleNodes],
+  );
+
+  useEffect(() => {
+    setReferenceSort("relevance");
+    setCitingSort("relevance");
+  }, [graph.centerId]);
   const layoutClasses = [
     "citation-map",
     references.length === 0 ? "no-references" : "",
@@ -150,15 +198,19 @@ export function CitationGraph({
       <PaperGroup
         papers={references}
         relation="reference"
+        sort={referenceSort}
         selectedId={selectedId}
         onSelect={onSelect}
+        onSort={setReferenceSort}
       />
 
       <PaperGroup
         papers={citing}
         relation="citing"
+        sort={citingSort}
         selectedId={selectedId}
         onSelect={onSelect}
+        onSort={setCitingSort}
       />
     </div>
   );

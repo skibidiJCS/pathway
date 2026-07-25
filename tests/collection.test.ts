@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   LOCAL_COLLECTION_LIMIT,
+  buildSavedRelationships,
   calculateAudit,
   compareSavedPapers,
   mergeCollections,
@@ -111,6 +112,49 @@ test("comparison separates shared and unique links and detects direct citations"
     ["C"],
   );
   assert.deepEqual(comparison.directRelationships, [
+    "Paper A cites Paper B",
+  ]);
+});
+
+test("saved-paper map links only citation-supported relationships with correct direction", () => {
+  const firstPaper = paper("A", 4, ["Policy"]);
+  const secondPaper = paper("B", 8, ["Policy", "Law"]);
+  const thirdPaper = paper("C", 2, ["Law"]);
+  const sharedReference = paper("X");
+  const commonCiting = paper("Y");
+  const collection = [
+    saved(firstPaper, [secondPaper, sharedReference], [commonCiting]),
+    saved(secondPaper, [sharedReference], [commonCiting]),
+    saved(thirdPaper),
+  ];
+
+  const graph = buildSavedRelationships(collection, ["A", "B", "C"]);
+
+  assert.deepEqual(
+    graph.papers.map((item) => item.id),
+    ["A", "B", "C"],
+  );
+  assert.equal(graph.relationships.length, 1);
+  assert.equal(graph.relationships[0].source, "A");
+  assert.equal(graph.relationships[0].target, "B");
+  assert.equal(graph.relationships[0].direction, "forward");
+  assert.equal(graph.relationships[0].sharedReferences[0].id, "X");
+  assert.equal(graph.relationships[0].commonCitingPapers[0].id, "Y");
+  assert.deepEqual(graph.relationships[0].sharedTopics, ["Policy"]);
+});
+
+test("saved-paper map detects direct citations from the inverse citing list", () => {
+  const firstPaper = paper("A");
+  const secondPaper = paper("B");
+  const graph = buildSavedRelationships(
+    [saved(firstPaper), saved(secondPaper, [], [firstPaper])],
+    ["A", "B"],
+  );
+
+  assert.equal(graph.relationships.length, 1);
+  assert.equal(graph.relationships[0].source, "A");
+  assert.equal(graph.relationships[0].target, "B");
+  assert.deepEqual(graph.relationships[0].directRelationships, [
     "Paper A cites Paper B",
   ]);
 });

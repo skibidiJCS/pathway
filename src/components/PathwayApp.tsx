@@ -20,6 +20,11 @@ import {
   storeGuestCollection,
   storeGuestSettings,
 } from "../../lib/collection";
+import {
+  loadExplorationHistory,
+  storeExplorationHistory,
+  updateExplorationHistory,
+} from "../../lib/history";
 import type {
   CitationGraphData,
   CollectionSettings,
@@ -53,11 +58,16 @@ function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || "Account";
 }
 
+function compactHistoryTitle(title: string): string {
+  return title.length <= 44 ? title : `${title.slice(0, 43)}…`;
+}
+
 export function PathwayApp() {
   const [view, setView] = useState<View>("explore");
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Paper[] | null>(null);
+  const [matchedAuthor, setMatchedAuthor] = useState("");
   const [searchError, setSearchError] = useState("");
   const [graph, setGraph] = useState<CitationGraphData | null>(null);
   const [graphState, setGraphState] = useState<LoadState>("idle");
@@ -65,6 +75,10 @@ export function PathwayApp() {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [minYear, setMinYear] = useState("");
+  const [openAccessOnly, setOpenAccessOnly] = useState(false);
+  const [explorationHistory, setExplorationHistory] = useState<Paper[]>(() =>
+    loadExplorationHistory(),
+  );
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
@@ -202,9 +216,10 @@ export function PathwayApp() {
     return graph.nodes.filter((paper) => {
       if (paper.id === graph.centerId) return true;
       if (minYear && (paper.year === null || paper.year < year)) return false;
+      if (openAccessOnly && !paper.isOpenAccess) return false;
       return true;
     });
-  }, [graph, minYear]);
+  }, [graph, minYear, openAccessOnly]);
 
   const collectionLimit = account
     ? CLOUD_COLLECTION_LIMIT
@@ -281,14 +296,17 @@ export function PathwayApp() {
     const requestId = ++searchRequestId.current;
     setSearching(true);
     setSearchError("");
+    setMatchedAuthor("");
 
     try {
       const response = await searchPapers(trimmed);
       if (requestId !== searchRequestId.current) return;
       setResults(response.results.slice(0, SEARCH_RESULT_LIMIT));
+      setMatchedAuthor(response.matchedAuthor ?? "");
     } catch (error) {
       if (requestId !== searchRequestId.current) return;
       setResults([]);
+      setMatchedAuthor("");
       setSearchError(
         error instanceof Error ? error.message : "Search could not be completed.",
       );
@@ -309,6 +327,7 @@ export function PathwayApp() {
     if (trimmed.length < 3) {
       setSearchError("");
       setResults(null);
+      setMatchedAuthor("");
       return undefined;
     }
 
@@ -358,14 +377,20 @@ export function PathwayApp() {
     setSelectedPaper(paper);
     setDetailsExpanded(false);
     setMinYear("");
+    setOpenAccessOnly(false);
 
     try {
       const nextGraph = await loadCitationGraph(paper.id);
       if (requestId !== graphRequestId.current) return;
+      const center =
+        nextGraph.nodes.find((node) => node.id === nextGraph.centerId) ?? paper;
       setGraph(nextGraph);
-      setSelectedPaper(
-        nextGraph.nodes.find((node) => node.id === nextGraph.centerId) ?? paper,
-      );
+      setSelectedPaper(center);
+      setExplorationHistory((current) => {
+        const next = updateExplorationHistory(current, center);
+        storeExplorationHistory(next);
+        return next;
+      });
       setGraphState("ready");
     } catch (error) {
       if (requestId !== graphRequestId.current) return;
@@ -389,6 +414,7 @@ export function PathwayApp() {
     setQuery("");
     setSearching(false);
     setResults(null);
+    setMatchedAuthor("");
     setSearchError("");
     setGraph(null);
     setGraphState("idle");
@@ -396,6 +422,7 @@ export function PathwayApp() {
     setSelectedPaper(null);
     setDetailsExpanded(false);
     setMinYear("");
+    setOpenAccessOnly(false);
   };
 
   const handleSave = async (paper: Paper) => {
@@ -682,6 +709,7 @@ export function PathwayApp() {
             collection={collection}
             limit={collectionLimit}
             synced={Boolean(account)}
+            theme={theme}
             updates={updates}
             checkingUpdates={checkingUpdates}
             lastCheckedAt={settings.lastCheckedAt}
@@ -705,8 +733,8 @@ export function PathwayApp() {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search by title, DOI or keyword"
-                  aria-label="Paper title, DOI or keyword"
+                  placeholder="Search by title, DOI, keyword or author"
+                  aria-label="Paper title, DOI, keyword or full author name"
                   autoComplete="off"
                 />
                 {query ? (
@@ -766,13 +794,53 @@ export function PathwayApp() {
                         </button>
                       ) : null}
                     </div>
+                    <label className="oa-filter">
+                      <input
+                        type="checkbox"
+                        checked={openAccessOnly}
+                        onChange={(event) =>
+                          setOpenAccessOnly(event.target.checked)
+                        }
+                      />
+                      <span>Open access only</span>
+                    </label>
                   </div>
                 </div>
               ) : null}
             </div>
 
+            {graph && explorationHistory.length > 0 ? (
+              <nav
+                className="exploration-history"
+                aria-label="Exploration history"
+              >
+                <span>History</span>
+                <div>
+                  {explorationHistory.map((paper) => (
+                    <button
+                      key={paper.id}
+                      type="button"
+                      className={paper.id === graph.centerId ? "active" : ""}
+                      onClick={() => void selectSearchResult(paper)}
+                      aria-current={
+                        paper.id === graph.centerId ? "page" : undefined
+                      }
+                      title={paper.title}
+                    >
+                      {compactHistoryTitle(paper.title)}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            ) : null}
+
             {results ? (
               <div className="search-results" aria-live="polite">
+                {matchedAuthor && results.length > 0 ? (
+                  <div className="results-context">
+                    Papers by {matchedAuthor}
+                  </div>
+                ) : null}
                 {results.length === 0 ? (
                   <div className="result-empty">
                     {searchError || "No papers matched that search."}

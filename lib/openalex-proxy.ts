@@ -9,6 +9,12 @@ interface ProxyEnv {
   OPENALEX_API_KEY?: string;
 }
 
+interface OpenAlexAuthor {
+  id?: string;
+  display_name?: string;
+  works_count?: number;
+}
+
 const OPENALEX_API = "https://api.openalex.org";
 const SEARCH_LIMIT = 12;
 const RELATION_LIMIT = 14;
@@ -48,6 +54,49 @@ function extractDoi(query: string): string | null {
     .replace(/^doi:\s*/i, "")
     .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "");
   return /^10\.\d{4,9}\/\S+$/i.test(cleaned) ? cleaned : null;
+}
+
+function normalizedName(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function looksLikeFullName(query: string): boolean {
+  const words = normalizedName(query).split(" ").filter(Boolean);
+  return (
+    words.length >= 2 &&
+    words.length <= 6 &&
+    query.length <= 90 &&
+    !/\d/.test(query)
+  );
+}
+
+async function findExactAuthor(
+  query: string,
+  env: ProxyEnv,
+): Promise<OpenAlexAuthor | null> {
+  if (!looksLikeFullName(query)) return null;
+  const data = await openAlexFetch<{ results?: OpenAlexAuthor[] }>(
+    "/autocomplete/authors",
+    { q: query },
+    env,
+  );
+  const queryName = normalizedName(query);
+  return (
+    (data.results ?? [])
+      .filter(
+        (author) =>
+          author.id &&
+          author.display_name &&
+          normalizedName(author.display_name) === queryName,
+      )
+      .sort((a, b) => (b.works_count ?? 0) - (a.works_count ?? 0))[0] ?? null
+  );
 }
 
 async function openAlexFetch<T>(
@@ -95,6 +144,30 @@ async function searchWorks(query: string, env: ProxyEnv): Promise<Response> {
         return json({ results: [] });
       }
       throw error;
+    }
+  }
+
+  const author = await findExactAuthor(query, env);
+  if (author?.id && author.display_name) {
+    const authorId = author.id.match(/A\d+$/i)?.[0];
+    if (authorId) {
+      const data = await openAlexFetch<{ results?: OpenAlexWork[] }>(
+        "/works",
+        {
+          filter: `author.id:${authorId}`,
+          sort: "cited_by_count:desc",
+          per_page: String(SEARCH_LIMIT),
+          select: WORK_FIELDS,
+        },
+        env,
+      );
+      return json({
+        matchedAuthor: author.display_name,
+        results: (data.results ?? [])
+          .map((work) => toPaper(work, "selected"))
+          .filter((paper) => paper.id)
+          .slice(0, SEARCH_LIMIT),
+      });
     }
   }
 
@@ -198,7 +271,7 @@ export async function handleOpenAlexRequest(
         return json(
           {
             error:
-              "Enter a title, DOI or keyword between 3 and 220 characters.",
+              "Enter a title, DOI, keyword or author between 3 and 220 characters.",
           },
           400,
         );

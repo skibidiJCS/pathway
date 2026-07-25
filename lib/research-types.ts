@@ -30,6 +30,7 @@ export interface CitationGraphData {
 
 export interface SearchResponse {
   results: Paper[];
+  matchedAuthor?: string;
 }
 
 export type ReviewStatus = "unread" | "reviewed" | "used";

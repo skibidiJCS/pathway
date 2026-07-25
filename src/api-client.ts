@@ -6,8 +6,8 @@ import type {
   UpdatesResponse,
 } from "../lib/research-types";
 
-const CACHE_PREFIX = "pathway:v4:";
-const LEGACY_CACHE_PREFIX = "pathway:v3:";
+const CACHE_PREFIX = "pathway:v5:";
+const LEGACY_CACHE_PREFIXES = ["pathway:v3:", "pathway:v4:"];
 const memoryCache = new Map<string, { expires: number; value: unknown }>();
 let storagePrepared = false;
 
@@ -20,7 +20,7 @@ function prepareCacheStorage(now: number): void {
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
       if (!key) continue;
-      if (key.startsWith(LEGACY_CACHE_PREFIX)) {
+      if (LEGACY_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix))) {
         keysToRemove.push(key);
         continue;
       }

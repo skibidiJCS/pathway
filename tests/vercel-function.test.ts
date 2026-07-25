@@ -56,3 +56,75 @@ test("Vercel function returns JSON through the Node request-response contract", 
   assert.equal(headers.get("X-Content-Type-Options"), "nosniff");
   assert.deepEqual(body, { error: "Unknown request mode." });
 });
+
+test("Vercel search resolves an exact full author name to that author's works", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = new URL(
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input
+          : input.url,
+    );
+    requestedUrls.push(url.toString());
+    if (url.pathname === "/autocomplete/authors") {
+      return Response.json({
+        results: [
+          {
+            id: "https://openalex.org/A5100384468",
+            display_name: "Albert Einstein",
+            works_count: 350,
+          },
+        ],
+      });
+    }
+    return Response.json({
+      results: [
+        {
+          id: "https://openalex.org/W123",
+          display_name: "On a notable physical question",
+          publication_year: 1905,
+          cited_by_count: 12,
+          authorships: [
+            { author: { display_name: "Albert Einstein" } },
+          ],
+        },
+      ],
+    });
+  }) as typeof fetch;
+
+  try {
+    let status = 0;
+    let body: {
+      matchedAuthor?: string;
+      results?: Array<{ id: string; authors: string[] }>;
+    } = {};
+    await openAlexFunction(
+      {
+        method: "GET",
+        url: "/api/openalex?mode=search&q=Albert%20Einstein",
+        headers: { host: "pathwayresearch.vercel.app" },
+      },
+      {
+        status(code) {
+          status = code;
+          return this;
+        },
+        setHeader() {},
+        json(value: typeof body) {
+          body = value;
+        },
+      },
+    );
+
+    assert.equal(status, 200);
+    assert.equal(body.matchedAuthor, "Albert Einstein");
+    assert.equal(body.results?.[0]?.id, "W123");
+    assert.deepEqual(body.results?.[0]?.authors, ["Albert Einstein"]);
+    assert.match(requestedUrls[1], /filter=author\.id%3AA5100384468/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

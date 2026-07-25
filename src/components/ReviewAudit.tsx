@@ -12,6 +12,7 @@ import type {
   ReviewStatus,
   SavedPaper,
 } from "../../lib/research-types";
+import { SavedGraph } from "./SavedGraph";
 
 interface ReviewAuditProps {
   collection: SavedPaper[];
@@ -20,6 +21,7 @@ interface ReviewAuditProps {
   updates: Paper[];
   checkingUpdates: boolean;
   lastCheckedAt: string | null;
+  theme: "light" | "dark";
   onExplore: (paper: Paper) => void;
   onRemove: (paperId: string) => void;
   onStatusChange: (paperId: string, status: ReviewStatus) => void;
@@ -55,6 +57,7 @@ export function ReviewAudit({
   updates,
   checkingUpdates,
   lastCheckedAt,
+  theme,
   onExplore,
   onRemove,
   onStatusChange,
@@ -64,6 +67,10 @@ export function ReviewAudit({
   const audit = useMemo(() => calculateAudit(collection), [collection]);
   const [firstId, setFirstId] = useState(collection[0]?.paper.id ?? "");
   const [secondId, setSecondId] = useState(collection[1]?.paper.id ?? "");
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mappedIds, setMappedIds] = useState<string[]>(() =>
+    collection.slice(0, 25).map((entry) => entry.paper.id),
+  );
 
   useEffect(() => {
     if (!collection.some((entry) => entry.paper.id === firstId)) {
@@ -78,6 +85,16 @@ export function ReviewAudit({
       );
     }
   }, [collection, firstId, secondId]);
+
+  useEffect(() => {
+    setMappedIds((current) => {
+      const available = new Set(collection.map((entry) => entry.paper.id));
+      const valid = current.filter((id) => available.has(id)).slice(0, 25);
+      return valid.length > 0
+        ? valid
+        : collection.slice(0, 25).map((entry) => entry.paper.id);
+    });
+  }, [collection]);
 
   const comparison = useMemo(() => {
     const first = collection.find((entry) => entry.paper.id === firstId);
@@ -122,6 +139,14 @@ export function ReviewAudit({
           </span>
         </div>
         <div className="review-heading-actions">
+          <button
+            type="button"
+            onClick={() => setMapOpen((open) => !open)}
+            disabled={collection.length < 2}
+            aria-expanded={mapOpen}
+          >
+            {mapOpen ? "Close map" : "Map papers"}
+          </button>
           <button
             type="button"
             onClick={onCheckUpdates}
@@ -196,6 +221,53 @@ export function ReviewAudit({
           <strong>{audit.years.length}</strong> publication years
         </span>
       </div>
+
+      {mapOpen ? (
+        <section className="saved-map-section" aria-label="Saved paper map">
+          <header className="saved-map-heading">
+            <div>
+              <h2>Saved paper map</h2>
+              <p>
+                Select up to 25 papers. Arrows show direct citations; dashed
+                lines show shared references or citing papers.
+              </p>
+            </div>
+            <span>{mappedIds.length} selected</span>
+          </header>
+          <div className="saved-map-selector">
+            {collection.map((entry) => {
+              const checked = mappedIds.includes(entry.paper.id);
+              return (
+                <label key={entry.paper.id} title={entry.paper.title}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={!checked && mappedIds.length >= 25}
+                    onChange={(event) =>
+                      setMappedIds((current) =>
+                        event.target.checked
+                          ? [...current, entry.paper.id].slice(0, 25)
+                          : current.filter((id) => id !== entry.paper.id),
+                      )
+                    }
+                  />
+                  <span>{compactTitle(entry.paper.title, 42)}</span>
+                </label>
+              );
+            })}
+          </div>
+          <SavedGraph
+            collection={collection}
+            selectedIds={mappedIds}
+            theme={theme}
+            onExplore={onExplore}
+          />
+          <p className="saved-map-note">
+            Connections use the citation neighborhoods stored when each paper
+            was saved.
+          </p>
+        </section>
+      ) : null}
 
       <div className="review-layout">
         <section className="collection-section">
