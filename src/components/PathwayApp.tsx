@@ -64,6 +64,12 @@ function compactHistoryTitle(title: string): string {
   return title.length <= 44 ? title : `${title.slice(0, 43)}…`;
 }
 
+function releaseMobileFocus(): void {
+  if (!window.matchMedia("(max-width: 620px)").matches) return;
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement) activeElement.blur();
+}
+
 export function PathwayApp() {
   const [view, setView] = useState<View>("explore");
   const [query, setQuery] = useState("");
@@ -78,6 +84,9 @@ export function PathwayApp() {
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [minYear, setMinYear] = useState("");
   const [openAccessOnly, setOpenAccessOnly] = useState(false);
+  const [compactSearchPlaceholder, setCompactSearchPlaceholder] = useState(
+    () => window.matchMedia("(max-width: 620px)").matches,
+  );
   const [explorationHistory, setExplorationHistory] = useState<Paper[]>(() =>
     loadExplorationHistory(),
   );
@@ -127,6 +136,15 @@ export function PathwayApp() {
       // The active theme still works when browser storage is unavailable.
     }
   }, [theme]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 620px)");
+    const updatePlaceholder = () =>
+      setCompactSearchPlaceholder(media.matches);
+    updatePlaceholder();
+    media.addEventListener("change", updatePlaceholder);
+    return () => media.removeEventListener("change", updatePlaceholder);
+  }, []);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -364,6 +382,7 @@ export function PathwayApp() {
   };
 
   const selectSearchResult = async (paper: Paper) => {
+    releaseMobileFocus();
     setView("explore");
     const requestId = ++graphRequestId.current;
     searchRequestId.current += 1;
@@ -403,6 +422,11 @@ export function PathwayApp() {
       );
       setGraphState("error");
     }
+  };
+
+  const selectGraphPaper = (paper: Paper) => {
+    releaseMobileFocus();
+    setSelectedPaper(paper);
   };
 
   const resetApp = () => {
@@ -613,7 +637,11 @@ export function PathwayApp() {
   };
 
   return (
-    <main className="app-shell">
+    <main
+      className={`app-shell${
+        detailsExpanded && selectedPaper ? " mobile-details-open" : ""
+      }`}
+    >
       <header className="site-header">
         <button
           className="brand"
@@ -758,7 +786,11 @@ export function PathwayApp() {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search by title, DOI, keyword or author"
+                  placeholder={
+                    compactSearchPlaceholder
+                      ? "Title, DOI, keyword"
+                      : "Title, DOI, keyword or author"
+                  }
                   aria-label="Paper title, DOI, keyword or full author name"
                   autoComplete="off"
                 />
@@ -931,7 +963,7 @@ export function PathwayApp() {
                   <CitationGraph
                     graph={graph}
                     visibleNodes={visibleNodes}
-                    onSelect={setSelectedPaper}
+                    onSelect={selectGraphPaper}
                     selectedId={selectedPaper?.id ?? graph.centerId}
                     theme={theme}
                   />

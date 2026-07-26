@@ -67,7 +67,12 @@ export function PaperDetails({
             aria-label={expanded ? "Reduce paper details" : "Open paper details"}
             title={expanded ? "Reduce details" : "Open details"}
           >
-            {expanded ? "Reduce →" : "Open ←"}
+            <span className="panel-toggle-desktop">
+              {expanded ? "Reduce →" : "Open ←"}
+            </span>
+            <span className="panel-toggle-mobile">
+              {expanded ? "Reduce ↓" : "Open ↑"}
+            </span>
           </button>
         </div>
         {!paper ? (
