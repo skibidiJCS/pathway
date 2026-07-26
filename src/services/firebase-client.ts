@@ -23,12 +23,12 @@ import {
   CLOUD_COLLECTION_LIMIT,
   NOTE_LIMIT,
   sanitizeCollection,
-} from "../lib/collection";
+} from "../../lib/collection";
 import type {
   CollectionSettings,
   Paper,
   SavedPaper,
-} from "../lib/research-types";
+} from "../../lib/research-types";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config";
 
 const app = firebaseConfigured

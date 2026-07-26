@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   sortCitationPapers,
   type PaperSort,
-} from "../../lib/graph-view";
-import type { CitationGraphData, Paper } from "../../lib/research-types";
+} from "../../../lib/graph-view";
+import type { CitationGraphData, Paper } from "../../../lib/research-types";
 
 interface CitationGraphProps {
   graph: CitationGraphData;

@@ -3,8 +3,8 @@ import type cytoscape from "cytoscape";
 import {
   buildSavedRelationships,
   type SavedRelationship,
-} from "../../lib/collection";
-import type { Paper, SavedPaper } from "../../lib/research-types";
+} from "../../../lib/collection";
+import type { Paper, SavedPaper } from "../../../lib/research-types";
 
 interface SavedGraphProps {
   collection: SavedPaper[];

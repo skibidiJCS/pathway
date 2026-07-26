@@ -6,13 +6,13 @@ import {
   compareSavedPapers,
   sanitizeFolder,
   sanitizeTags,
-} from "../../lib/collection";
-import type { BridgePaper } from "../../lib/collection";
+} from "../../../lib/collection";
+import type { BridgePaper } from "../../../lib/collection";
 import type {
   Paper,
   ReviewStatus,
   SavedPaper,
-} from "../../lib/research-types";
+} from "../../../lib/research-types";
 import { SavedGraph } from "./SavedGraph";
 
 interface ReviewAuditProps {

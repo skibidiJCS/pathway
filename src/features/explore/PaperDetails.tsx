@@ -2,7 +2,7 @@ import type {
   Paper,
   ReviewStatus,
   SavedPaper,
-} from "../../lib/research-types";
+} from "../../../lib/research-types";
 
 interface PaperDetailsProps {
   paper: Paper | null;

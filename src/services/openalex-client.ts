@@ -2,7 +2,7 @@ import type {
   CitationGraphData,
   SearchResponse,
   UpdatesResponse,
-} from "../lib/research-types";
+} from "../../lib/research-types";
 
 const CACHE_PREFIX = "pathway:v5:";
 const LEGACY_CACHE_PREFIXES = ["pathway:v3:", "pathway:v4:"];

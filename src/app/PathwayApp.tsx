@@ -3,7 +3,7 @@ import {
   loadCitationGraph,
   loadCollectionUpdates,
   searchPapers,
-} from "../api-client";
+} from "../services/openalex-client";
 import {
   CLOUD_COLLECTION_LIMIT,
   LOCAL_COLLECTION_LIMIT,
@@ -32,35 +32,14 @@ import type {
   ReviewStatus,
   SavedPaper,
 } from "../../lib/research-types";
-import { firebaseConfigured } from "../firebase-config";
-import type { PathwayAccount } from "../firebase-client";
-import { CitationGraph } from "./CitationGraph";
-import { PaperDetails } from "./PaperDetails";
-import { ReviewAudit } from "./ReviewAudit";
-
-type LoadState = "idle" | "loading" | "ready" | "error";
-type SyncState = "idle" | "loading" | "syncing" | "ready" | "error";
-type Theme = "light" | "dark";
-type View = "explore" | "review";
-
-const SEARCH_RESULT_LIMIT = 12;
-const GRAPH_PAPER_LIMIT = 29;
-
-function resultMeta(paper: Paper): string {
-  const authors =
-    paper.authors.length > 0
-      ? paper.authors.slice(0, 3).join(", ")
-      : "Unknown authors";
-  return `${authors} · ${paper.year ?? "Year unknown"} · ${paper.citationCount.toLocaleString()} citations`;
-}
-
-function firstName(name: string): string {
-  return name.trim().split(/\s+/)[0] || "Account";
-}
-
-function compactHistoryTitle(title: string): string {
-  return title.length <= 44 ? title : `${title.slice(0, 43)}…`;
-}
+import { firebaseConfigured } from "../services/firebase-config";
+import type { PathwayAccount } from "../services/firebase-client";
+import { ExploreWorkspace } from "../features/explore/ExploreWorkspace";
+import { SearchPanel } from "../features/explore/SearchPanel";
+import { ReviewPage } from "../features/review/ReviewPage";
+import { AppHeader } from "./AppHeader";
+import type { LoadState, SyncState, Theme, View } from "./app-types";
+import { SEARCH_RESULT_LIMIT } from "./config";
 
 function releaseMobileFocus(): void {
   if (!window.matchMedia("(max-width: 620px)").matches) return;
@@ -153,7 +132,7 @@ export function PathwayApp() {
     let stop: () => void = () => undefined;
 
     if (firebaseConfigured) {
-      void import("../firebase-client").then((firebase) => {
+      void import("../services/firebase-client").then((firebase) => {
         if (!active) return;
         stop = firebase.observeAccount((nextAccount) => {
           if (!active) return;
@@ -270,7 +249,9 @@ export function PathwayApp() {
       cloudSaveTimers.current.delete(entry.paper.id);
       setSyncState("syncing");
       try {
-        const { saveCloudPaper } = await import("../firebase-client");
+        const { saveCloudPaper } = await import(
+          "../services/firebase-client"
+        );
         await saveCloudPaper(activeAccount.uid, entry);
         if (accountRef.current?.uid === activeAccount.uid) {
           setSyncState("ready");
@@ -502,7 +483,7 @@ export function PathwayApp() {
     applyCollection(next, activeAccount);
     if (activeAccount) {
       setSyncState("syncing");
-      void import("../firebase-client")
+      void import("../services/firebase-client")
         .then(({ deleteCloudPaper }) =>
           deleteCloudPaper(activeAccount.uid, paperId),
         )
@@ -551,7 +532,9 @@ export function PathwayApp() {
     }
     setAuthBusy(true);
     try {
-      const { signInWithGoogle } = await import("../firebase-client");
+      const { signInWithGoogle } = await import(
+        "../services/firebase-client"
+      );
       await signInWithGoogle();
     } catch (error) {
       setNotice(
@@ -563,7 +546,7 @@ export function PathwayApp() {
   };
 
   const handleSignOut = async () => {
-    const { signOutAccount } = await import("../firebase-client");
+    const { signOutAccount } = await import("../services/firebase-client");
     await signOutAccount();
   };
 
@@ -578,7 +561,7 @@ export function PathwayApp() {
     applyCollection(merged, activeAccount);
     setSyncState("syncing");
     try {
-      const { mergeIntoCloud } = await import("../firebase-client");
+      const { mergeIntoCloud } = await import("../services/firebase-client");
       await mergeIntoCloud(activeAccount.uid, merged);
       setMergeCandidate(null);
       setSyncState("ready");
@@ -616,7 +599,9 @@ export function PathwayApp() {
       const activeAccount = accountRef.current;
       if (activeAccount) {
         storeAccountSettings(activeAccount.uid, nextSettings);
-        const { saveCloudSettings } = await import("../firebase-client");
+        const { saveCloudSettings } = await import(
+          "../services/firebase-client"
+        );
         await saveCloudSettings(activeAccount.uid, nextSettings);
       } else {
         storeGuestSettings(nextSettings);
@@ -638,352 +623,80 @@ export function PathwayApp() {
         detailsExpanded && selectedPaper ? " mobile-details-open" : ""
       }`}
     >
-      <header className="site-header">
-        <button
-          className="brand"
-          type="button"
-          onClick={resetApp}
-          aria-label="Return to the Pathway homepage"
-          title="Return to homepage"
-        >
-          <img
-            className="brand-logo"
-            src="/pathway-logo-full.png"
-            alt="Pathway Research"
-          />
-        </button>
-        <div className="header-actions">
-          <button
-            className={`header-text-button${view === "review" ? " active" : ""}`}
-            type="button"
-            onClick={() => setView("review")}
-            aria-pressed={view === "review"}
-          >
-            Saved <span>{collection.length}</span>
-          </button>
-          {account ? (
-            <details className="account-menu">
-              <summary className="header-text-button">
-                {firstName(account.name)}
-              </summary>
-              <div className="account-popover">
-                <strong>{account.name}</strong>
-                <span>{account.email}</span>
-                <span className={`sync-label ${syncState}`}>
-                  {syncState === "loading"
-                    ? "Loading collection…"
-                    : syncState === "syncing"
-                      ? "Syncing…"
-                      : syncState === "error"
-                        ? "Sync needs attention"
-                        : "Synced with Google"}
-                </span>
-                <button type="button" onClick={() => void handleSignOut()}>
-                  Sign out
-                </button>
-              </div>
-            </details>
-          ) : (
-            <button
-              className="header-text-button"
-              type="button"
-              onClick={() => void handleSignIn()}
-              disabled={authBusy || !authReady}
-            >
-              {authBusy ? "Signing in…" : "Sign in"}
-            </button>
-          )}
-          <a
-            className="source-link"
-            href="https://openalex.org"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Data by OpenAlex ↗
-          </a>
-          <button
-            className="theme-toggle"
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-            aria-pressed={theme === "dark"}
-          >
-            <span className="theme-icon moon" aria-hidden="true">
-              ☾
-            </span>
-            <span className="theme-icon sun" aria-hidden="true">
-              ☀
-            </span>
-          </button>
-        </div>
-      </header>
+      <AppHeader
+        view={view}
+        collectionSize={collection.length}
+        account={account}
+        syncState={syncState}
+        authBusy={authBusy}
+        authReady={authReady}
+        theme={theme}
+        onHome={resetApp}
+        onReview={() => setView("review")}
+        onSignIn={() => void handleSignIn()}
+        onSignOut={() => void handleSignOut()}
+        onToggleTheme={toggleTheme}
+      />
 
       {view === "review" ? (
-        <section className="review-page">
-          {!firebaseConfigured ? (
-            <div className="review-sync-note">
-              Local saving is active. Add the Firebase project values to enable
-              Google sign-in and cross-device sync.
-            </div>
-          ) : !account ? (
-            <div className="review-sync-note">
-              Stored on this device only.{" "}
-              <button type="button" onClick={() => void handleSignIn()}>
-                Sign in with Google
-              </button>{" "}
-              to save up to {CLOUD_COLLECTION_LIMIT} papers across devices.
-            </div>
-          ) : null}
-          {mergeCandidate ? (
-            <div className="merge-notice">
-              <span>
-                Add your {mergeCandidate.length} local paper
-                {mergeCandidate.length === 1 ? "" : "s"} to this synced
-                collection?
-              </span>
-              <div>
-                <button type="button" onClick={() => void handleMerge()}>
-                  Merge
-                </button>
-                <button type="button" onClick={() => setMergeCandidate(null)}>
-                  Keep separate
-                </button>
-              </div>
-            </div>
-          ) : null}
-          <ReviewAudit
-            collection={collection}
-            limit={collectionLimit}
-            synced={Boolean(account)}
+        <ReviewPage
+          collection={collection}
+          limit={collectionLimit}
+          signedIn={Boolean(account)}
+          mergeCandidate={mergeCandidate}
+          theme={theme}
+          updates={updates}
+          checkingUpdates={checkingUpdates}
+          lastCheckedAt={settings.lastCheckedAt}
+          onSignIn={() => void handleSignIn()}
+          onMerge={() => void handleMerge()}
+          onDismissMerge={() => setMergeCandidate(null)}
+          onExplore={(paper) => void selectSearchResult(paper)}
+          onRemove={handleRemove}
+          onStatusChange={handleStatusChange}
+          onNoteChange={handleNoteChange}
+          onFolderChange={handleFolderChange}
+          onTagsChange={handleTagsChange}
+          onCheckUpdates={() => void handleCheckUpdates()}
+        />
+      ) : (
+        <>
+          <SearchPanel
+            query={query}
+            searching={searching}
+            results={results}
+            matchedAuthor={matchedAuthor}
+            searchError={searchError}
+            graph={graph}
+            minYear={minYear}
+            openAccessOnly={openAccessOnly}
+            compactPlaceholder={compactSearchPlaceholder}
+            history={explorationHistory}
+            onSearch={handleSearch}
+            onQueryChange={setQuery}
+            onMinYearChange={setMinYear}
+            onOpenAccessChange={setOpenAccessOnly}
+            onSelectPaper={(paper) => void selectSearchResult(paper)}
+          />
+
+          <ExploreWorkspace
+            graph={graph}
+            graphState={graphState}
+            graphError={graphError}
+            visibleNodes={visibleNodes}
+            selectedPaper={selectedPaper}
+            selectedSavedEntry={selectedSavedEntry}
+            detailsExpanded={detailsExpanded}
+            collectionFull={collection.length >= collectionLimit}
+            saving={savingPaperId === selectedPaper?.id}
             theme={theme}
-            updates={updates}
-            checkingUpdates={checkingUpdates}
-            lastCheckedAt={settings.lastCheckedAt}
-            onExplore={(paper) => void selectSearchResult(paper)}
+            onSelectPaper={selectGraphPaper}
+            onToggleDetails={() => setDetailsExpanded((value) => !value)}
+            onSave={(paper) => void handleSave(paper)}
             onRemove={handleRemove}
             onStatusChange={handleStatusChange}
             onNoteChange={handleNoteChange}
-            onFolderChange={handleFolderChange}
-            onTagsChange={handleTagsChange}
-            onCheckUpdates={() => void handleCheckUpdates()}
           />
-        </section>
-      ) : (
-        <>
-          <section className="search-region" aria-label="Paper search">
-            <form className="search-row" onSubmit={handleSearch}>
-              <div className="search-field">
-                <span className="search-icon" aria-hidden="true">
-                  ⌕
-                </span>
-                <input
-                  className="search-input"
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={
-                    compactSearchPlaceholder
-                      ? "Title, DOI, keyword"
-                      : "Title, DOI, keyword or author"
-                  }
-                  aria-label="Paper title, DOI, keyword or full author name"
-                  autoComplete="off"
-                />
-                {query ? (
-                  <button
-                    className="input-clear search-clear"
-                    type="button"
-                    onClick={() => setQuery("")}
-                    aria-label="Clear search"
-                  >
-                    ×
-                  </button>
-                ) : null}
-              </div>
-              <button
-                className="search-button"
-                type="submit"
-                disabled={searching}
-              >
-                {searching ? "Searching…" : "Search"}
-              </button>
-            </form>
-            <div className="search-meta-row">
-              <div
-                className={`search-note${searchError ? " error-text" : ""}`}
-                role={searchError ? "alert" : "status"}
-                aria-live="polite"
-              >
-                {searchError ||
-                  `Up to ${SEARCH_RESULT_LIMIT} results · each graph is limited to ${GRAPH_PAPER_LIMIT} papers`}
-              </div>
-              {graph ? (
-                <div className="filters" aria-label="Graph filters">
-                  <div className="filter-fields">
-                    <div className="year-field">
-                      <input
-                        className="filter-input year-input"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={minYear}
-                        onChange={(event) =>
-                          setMinYear(
-                            event.target.value.replace(/\D/g, "").slice(0, 4),
-                          )
-                        }
-                        placeholder="Publication year"
-                        aria-label="Filter papers published from this year"
-                      />
-                      {minYear ? (
-                        <button
-                          className="input-clear year-clear"
-                          type="button"
-                          onClick={() => setMinYear("")}
-                          aria-label="Clear publication year"
-                        >
-                          ×
-                        </button>
-                      ) : null}
-                    </div>
-                    <label className="oa-filter">
-                      <input
-                        type="checkbox"
-                        checked={openAccessOnly}
-                        onChange={(event) =>
-                          setOpenAccessOnly(event.target.checked)
-                        }
-                      />
-                      <span>Open access only</span>
-                    </label>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            {graph && explorationHistory.length > 0 ? (
-              <nav
-                className="exploration-history"
-                aria-label="Exploration history"
-              >
-                <span>History</span>
-                <div>
-                  {explorationHistory.map((paper) => (
-                    <button
-                      key={paper.id}
-                      type="button"
-                      className={paper.id === graph.centerId ? "active" : ""}
-                      onClick={() => void selectSearchResult(paper)}
-                      aria-current={
-                        paper.id === graph.centerId ? "page" : undefined
-                      }
-                      title={paper.title}
-                    >
-                      {compactHistoryTitle(paper.title)}
-                    </button>
-                  ))}
-                </div>
-              </nav>
-            ) : null}
-
-            {results ? (
-              <div className="search-results" aria-live="polite">
-                {matchedAuthor && results.length > 0 ? (
-                  <div className="results-context">
-                    Papers by {matchedAuthor}
-                  </div>
-                ) : null}
-                {results.length === 0 ? (
-                  <div className="result-empty">
-                    {searchError || "No papers matched that search."}
-                  </div>
-                ) : (
-                  results.map((paper) => (
-                    <button
-                      key={paper.id}
-                      className="result-button"
-                      type="button"
-                      onClick={() => void selectSearchResult(paper)}
-                    >
-                      <span className="result-title">{paper.title}</span>
-                      <span className="result-meta">{resultMeta(paper)}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-            ) : null}
-          </section>
-
-          <section
-            className={`workspace${detailsExpanded ? " details-expanded" : ""}`}
-          >
-            <div className="graph-stage">
-              {graphState === "idle" ? (
-                <div className="graph-state">
-                  <div className="state-mark" aria-hidden="true">
-                    ↗
-                  </div>
-                  <h2>Start with a paper</h2>
-                  <p>
-                    Search above, choose one result, and its immediate citation
-                    neighborhood will appear here.
-                  </p>
-                </div>
-              ) : null}
-
-              {graphState === "loading" ? (
-                <div className="graph-state" role="status">
-                  <div className="state-mark">
-                    <span className="loading-ring" aria-hidden="true" />
-                  </div>
-                  <h2>Building citation graph</h2>
-                  <p>
-                    Loading the selected paper, references, and citing papers.
-                  </p>
-                </div>
-              ) : null}
-
-              {graphState === "error" ? (
-                <div className="graph-state error" role="alert">
-                  <div className="state-mark" aria-hidden="true">
-                    !
-                  </div>
-                  <h2>Graph unavailable</h2>
-                  <p>{graphError}</p>
-                </div>
-              ) : null}
-
-              {graph && graphState === "ready" ? (
-                <>
-                  <CitationGraph
-                    graph={graph}
-                    visibleNodes={visibleNodes}
-                    onSelect={selectGraphPaper}
-                    selectedId={selectedPaper?.id ?? graph.centerId}
-                    theme={theme}
-                  />
-                  <div className="graph-footer">
-                    Showing {visibleNodes.length} of {graph.nodes.length} papers
-                    · click a paper for details
-                  </div>
-                </>
-              ) : null}
-            </div>
-
-            <PaperDetails
-              paper={selectedPaper}
-              expanded={detailsExpanded}
-              savedEntry={selectedSavedEntry}
-              collectionFull={collection.length >= collectionLimit}
-              saving={savingPaperId === selectedPaper?.id}
-              onToggle={() => setDetailsExpanded((value) => !value)}
-              onSave={(paper) => void handleSave(paper)}
-              onRemove={handleRemove}
-              onStatusChange={handleStatusChange}
-              onNoteChange={handleNoteChange}
-            />
-          </section>
         </>
       )}
 
