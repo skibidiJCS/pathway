@@ -1,5 +1,3 @@
-"use client";
-
 import type {
   CitationGraphData,
   SearchResponse,
@@ -36,9 +34,7 @@ function prepareCacheStorage(now: number): void {
       }
     }
     keysToRemove.forEach((key) => localStorage.removeItem(key));
-  } catch {
-    // Requests still use the in-memory cache when storage is unavailable.
-  }
+  } catch {}
 }
 
 async function cachedRequest<T>(url: string, ttlMs: number): Promise<T> {
@@ -80,9 +76,7 @@ async function cachedRequest<T>(url: string, ttlMs: number): Promise<T> {
   memoryCache.set(key, entry);
   try {
     localStorage.setItem(key, JSON.stringify(entry));
-  } catch {
-    // Memory caching is sufficient when browser storage is unavailable.
-  }
+  } catch {}
 
   return data;
 }

@@ -173,9 +173,7 @@ function storeCollection(key: string, collection: SavedPaper[], limit: number) {
       key,
       JSON.stringify(sanitizeCollection(collection, limit)),
     );
-  } catch {
-    // The active session continues when browser storage is unavailable.
-  }
+  } catch {}
 }
 
 export function loadGuestCollection(): SavedPaper[] {
@@ -214,9 +212,7 @@ function loadSettings(key: string): CollectionSettings {
 function storeSettings(key: string, settings: CollectionSettings) {
   try {
     localStorage.setItem(key, JSON.stringify(settings));
-  } catch {
-    // The active session continues when browser storage is unavailable.
-  }
+  } catch {}
 }
 
 export function loadGuestSettings(): CollectionSettings {

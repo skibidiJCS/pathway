@@ -35,7 +35,5 @@ export function storeExplorationHistory(history: Paper[]): void {
       HISTORY_KEY,
       JSON.stringify(history.slice(0, EXPLORATION_HISTORY_LIMIT)),
     );
-  } catch {
-    // Session history still works if browser storage is unavailable.
-  }
+  } catch {}
 }

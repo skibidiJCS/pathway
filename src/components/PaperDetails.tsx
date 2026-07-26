@@ -1,5 +1,3 @@
-"use client";
-
 import type {
   Paper,
   ReviewStatus,

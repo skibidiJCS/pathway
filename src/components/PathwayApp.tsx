@@ -1,5 +1,3 @@
-"use client";
-
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   loadCitationGraph,
@@ -132,9 +130,7 @@ export function PathwayApp() {
     document.documentElement.dataset.theme = theme;
     try {
       localStorage.setItem("pathway:theme", theme);
-    } catch {
-      // The active theme still works when browser storage is unavailable.
-    }
+    } catch {}
   }, [theme]);
 
   useEffect(() => {
