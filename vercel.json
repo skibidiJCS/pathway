@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/openalex.js": {
+    "api/openalex.ts": {
       "maxDuration": 60
     }
   }

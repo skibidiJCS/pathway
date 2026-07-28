@@ -3,7 +3,7 @@ import test from "node:test";
 import openAlexFunction, {
   cleanAbstractText,
   cleanMetadataText,
-} from "../api/openalex.js";
+} from "../api/openalex.ts";
 
 test("Vercel function cleans common math markup in abstracts", () => {
   assert.equal(

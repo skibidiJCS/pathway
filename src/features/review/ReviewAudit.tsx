@@ -4,16 +4,16 @@ import {
   collectionToBibtex,
   collectionToCsv,
   compareSavedPapers,
-  sanitizeFolder,
-  sanitizeTags,
 } from "../../../lib/collection";
-import type { BridgePaper } from "../../../lib/collection";
 import type {
   Paper,
   ReviewStatus,
   SavedPaper,
 } from "../../../lib/research-types";
+import { AuditPaperList, BridgePaperList } from "./AuditPaperLists";
+import { CollectionRow } from "./CollectionRow";
 import { SavedGraph } from "./SavedGraph";
+import { checkedLabel, compactTitle, downloadFile } from "./review-utils";
 
 interface ReviewAuditProps {
   collection: SavedPaper[];
@@ -30,27 +30,6 @@ interface ReviewAuditProps {
   onFolderChange: (paperId: string, folder: string | null) => void;
   onTagsChange: (paperId: string, tags: string[]) => void;
   onCheckUpdates: () => void;
-}
-
-function downloadFile(filename: string, content: string, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-function compactTitle(title: string, maxLength = 68): string {
-  return title.length <= maxLength ? title : `${title.slice(0, maxLength - 1)}…`;
-}
-
-function checkedLabel(lastCheckedAt: string | null): string {
-  if (!lastCheckedAt) return "Not checked yet";
-  return `Last checked ${new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(lastCheckedAt))}`;
 }
 
 export function ReviewAudit({
@@ -498,190 +477,5 @@ export function ReviewAudit({
         </div>
       </div>
     </section>
-  );
-}
-
-function CollectionRow({
-  entry,
-  index,
-  onExplore,
-  onRemove,
-  onStatusChange,
-  onNoteChange,
-  onFolderChange,
-  onTagsChange,
-}: {
-  entry: SavedPaper;
-  index: number;
-  onExplore: (paper: Paper) => void;
-  onRemove: (paperId: string) => void;
-  onStatusChange: (paperId: string, status: ReviewStatus) => void;
-  onNoteChange: (paperId: string, note: string) => void;
-  onFolderChange: (paperId: string, folder: string | null) => void;
-  onTagsChange: (paperId: string, tags: string[]) => void;
-}) {
-  const [folderDraft, setFolderDraft] = useState(entry.folder ?? "");
-  const [tagsDraft, setTagsDraft] = useState(entry.tags.join(", "));
-
-  useEffect(() => setFolderDraft(entry.folder ?? ""), [entry.folder]);
-  useEffect(() => setTagsDraft(entry.tags.join(", ")), [entry.tags]);
-
-  return (
-    <article className="collection-row">
-      <span className="collection-index">
-        {String(index + 1).padStart(2, "0")}
-      </span>
-      <div className="collection-main">
-        <button
-          type="button"
-          className="collection-title"
-          onClick={() => onExplore(entry.paper)}
-        >
-          {entry.paper.title}
-        </button>
-        <span className="collection-meta">
-          {entry.paper.year ?? "Year unknown"} ·{" "}
-          {entry.paper.citationCount.toLocaleString()} citations ·{" "}
-          {entry.paper.isOpenAccess ? "Open access" : "Closed"}
-        </span>
-        <div className="collection-organize">
-          <label>
-            <span>Folder</span>
-            <input
-              type="text"
-              value={folderDraft}
-              list="pathway-folder-options"
-              onChange={(event) => setFolderDraft(event.target.value)}
-              onBlur={() =>
-                onFolderChange(entry.paper.id, sanitizeFolder(folderDraft))
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter") event.currentTarget.blur();
-              }}
-              placeholder="Add folder"
-              maxLength={48}
-              aria-label={`Folder for ${entry.paper.title}`}
-            />
-          </label>
-          <label>
-            <span>Tags</span>
-            <input
-              type="text"
-              value={tagsDraft}
-              onChange={(event) => setTagsDraft(event.target.value)}
-              onBlur={() =>
-                onTagsChange(
-                  entry.paper.id,
-                  sanitizeTags(tagsDraft.split(",")),
-                )
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter") event.currentTarget.blur();
-              }}
-              placeholder="policy, methods"
-              maxLength={271}
-              aria-label={`Tags for ${entry.paper.title}`}
-            />
-          </label>
-        </div>
-        <textarea
-          value={entry.note}
-          onChange={(event) =>
-            onNoteChange(entry.paper.id, event.target.value)
-          }
-          aria-label={`Private note for ${entry.paper.title}`}
-          placeholder="Private note…"
-          maxLength={2000}
-          rows={1}
-        />
-      </div>
-      <div className="collection-actions">
-        <select
-          value={entry.status}
-          onChange={(event) =>
-            onStatusChange(
-              entry.paper.id,
-              event.target.value as ReviewStatus,
-            )
-          }
-          aria-label={`Review status for ${entry.paper.title}`}
-        >
-          <option value="unread">Unread</option>
-          <option value="reviewed">Reviewed</option>
-          <option value="used">Used</option>
-        </select>
-        <button type="button" onClick={() => onRemove(entry.paper.id)}>
-          Remove
-        </button>
-      </div>
-    </article>
-  );
-}
-
-function BridgePaperList({
-  papers,
-  onExplore,
-}: {
-  papers: BridgePaper[];
-  onExplore: (paper: Paper) => void;
-}) {
-  if (papers.length === 0) {
-    return (
-      <p className="audit-empty-text">
-        No bridge papers are visible in the saved neighborhoods yet.
-      </p>
-    );
-  }
-  return (
-    <ul className="bridge-paper-list">
-      {papers.map((item) => (
-        <li key={item.paper.id}>
-          <button
-            type="button"
-            onClick={() => onExplore(item.paper)}
-            title={item.paper.title}
-          >
-            {compactTitle(item.paper.title)}
-          </button>
-          <span>
-            Connects {item.count} saved papers
-            {item.referencedByCount
-              ? ` · cited by ${item.referencedByCount}`
-              : ""}
-            {item.citesSavedCount
-              ? ` · cites ${item.citesSavedCount}`
-              : ""}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function AuditPaperList({
-  papers,
-  empty,
-  onExplore,
-}: {
-  papers: Array<{ paper: Paper; count: number }>;
-  empty: string;
-  onExplore: (paper: Paper) => void;
-}) {
-  if (papers.length === 0) return <p className="audit-empty-text">{empty}</p>;
-  return (
-    <ul className="audit-paper-list">
-      {papers.map((item) => (
-        <li key={item.paper.id}>
-          <button
-            type="button"
-            onClick={() => onExplore(item.paper)}
-            title={item.paper.title}
-          >
-            {compactTitle(item.paper.title)}
-          </button>
-          <span>Cited by {item.count} saved papers</span>
-        </li>
-      ))}
-    </ul>
   );
 }
