@@ -3,7 +3,7 @@ import test from "node:test";
 import openAlexFunction, {
   cleanAbstractText,
   cleanMetadataText,
-} from "../api/openalex.ts";
+} from "../api/openalex.js";
 
 test("Vercel function cleans common math markup in abstracts", () => {
   assert.equal(
@@ -124,6 +124,76 @@ test("Vercel search resolves an exact full author name to that author's works", 
     assert.equal(body.results?.[0]?.id, "W123");
     assert.deepEqual(body.results?.[0]?.authors, ["Albert Einstein"]);
     assert.match(requestedUrls[1], /filter=author\.id%3AA5100384468/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Vercel graph requests return both citation directions", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = new URL(
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input
+          : input.url,
+    );
+    if (url.pathname === "/works/W100") {
+      return Response.json({
+        id: "https://openalex.org/W100",
+        display_name: "Selected paper",
+      });
+    }
+    const filter = url.searchParams.get("filter");
+    return Response.json({
+      results:
+        filter === "cited_by:W100"
+          ? [
+              {
+                id: "https://openalex.org/W200",
+                display_name: "Referenced paper",
+              },
+            ]
+          : [
+              {
+                id: "https://openalex.org/W300",
+                display_name: "Citing paper",
+              },
+            ],
+    });
+  }) as typeof fetch;
+
+  try {
+    let status = 0;
+    let body: {
+      centerId?: string;
+      edges?: Array<{ source: string; target: string }>;
+    } = {};
+    await openAlexFunction(
+      {
+        method: "GET",
+        url: "/api/openalex?mode=graph&id=W100",
+        headers: { host: "pathwayresearch.vercel.app" },
+      },
+      {
+        status(code) {
+          status = code;
+          return this;
+        },
+        setHeader() {},
+        json(value: typeof body) {
+          body = value;
+        },
+      },
+    );
+
+    assert.equal(status, 200);
+    assert.equal(body.centerId, "W100");
+    assert.deepEqual(body.edges, [
+      { id: "W100->W200", source: "W100", target: "W200" },
+      { id: "W300->W100", source: "W300", target: "W100" },
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }
