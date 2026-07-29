@@ -263,7 +263,7 @@ body *:not(.theme-icon) {
   width: 32px;
   height: 32px;
   border: 1px solid var(--line);
-  border-radius: 50%;
+  border-radius: 0;
   display: grid;
   place-items: center;
   background: var(--field-bg);
@@ -366,7 +366,7 @@ body *:not(.theme-icon) {
   width: 100%;
   height: 40px;
   border: 1px solid var(--card-edge);
-  border-radius: 9px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
   padding: 0 42px 0 38px;
@@ -393,7 +393,7 @@ body *:not(.theme-icon) {
   width: 22px;
   height: 22px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 0;
   display: grid;
   place-items: center;
   transform: translateY(-50%);
@@ -423,7 +423,7 @@ body *:not(.theme-icon) {
 .search-button {
   min-width: 94px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 0;
   background: var(--button-bg);
   color: var(--button-text);
   padding: 0 18px;
@@ -464,7 +464,7 @@ body *:not(.theme-icon) {
   overflow-y: auto;
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
   box-shadow: var(--shadow);
   padding: 5px;
 }
@@ -472,7 +472,7 @@ body *:not(.theme-icon) {
 .result-button {
   width: 100%;
   border: 0;
-  border-radius: 7px;
+  border-radius: 0;
   background: transparent;
   text-align: left;
   padding: 10px;
@@ -552,7 +552,7 @@ body *:not(.theme-icon) {
   width: 82px;
   height: 28px;
   border: 1px solid var(--card-edge);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
   padding: 0 7px;
@@ -585,7 +585,7 @@ body *:not(.theme-icon) {
 .oa-filter {
   height: 28px;
   border: 1px solid var(--card-edge);
-  border-radius: 6px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -643,7 +643,7 @@ body *:not(.theme-icon) {
   height: 24px;
   overflow: hidden;
   border: 1px solid var(--soft-line);
-  border-radius: 5px;
+  border-radius: 0;
   background: transparent;
   color: var(--muted);
   padding: 0 7px;
@@ -770,7 +770,7 @@ body *:not(.theme-icon) {
   width: 92px;
   height: 25px;
   border: 1px solid var(--card-edge);
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
   padding: 0 4px;
@@ -969,7 +969,7 @@ body *:not(.theme-icon) {
   height: 27px;
   border: 3px solid #dfe4e9;
   border-top-color: var(--blue);
-  border-radius: 50%;
+  border-radius: 0;
   animation: spin 800ms linear infinite;
 }
 
@@ -1152,7 +1152,7 @@ body *:not(.theme-icon) {
 .paper-link {
   min-height: 34px;
   border: 1px solid var(--card-edge);
-  border-radius: 7px;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   color: var(--ink);
@@ -1177,7 +1177,7 @@ body *:not(.theme-icon) {
 .paper-review-row button {
   min-height: 32px;
   border: 1px solid var(--card-edge);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
   padding: 0 10px;
@@ -1217,7 +1217,7 @@ body *:not(.theme-icon) {
 .paper-review-row select,
 .paper-note-label textarea {
   border: 1px solid var(--card-edge);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
 }
@@ -1357,7 +1357,7 @@ body *:not(.theme-icon) {
 .review-heading-actions button {
   min-height: 32px;
   border: 1px solid var(--card-edge);
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: var(--ink);
   padding: 0 10px;
@@ -1512,7 +1512,7 @@ body *:not(.theme-icon) {
   max-width: 245px;
   height: 28px;
   border: 1px solid var(--soft-line);
-  border-radius: 5px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1691,7 +1691,7 @@ body *:not(.theme-icon) {
   min-width: 0;
   height: 28px;
   border: 1px solid var(--card-edge);
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
   padding: 0 7px;
@@ -1813,7 +1813,7 @@ body *:not(.theme-icon) {
 .collection-actions select {
   height: 28px;
   border: 1px solid var(--card-edge);
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
   padding: 0 6px;
@@ -1950,7 +1950,7 @@ body *:not(.theme-icon) {
   width: 145px;
   height: 28px;
   border: 1px solid var(--card-edge);
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--field-bg);
   color: var(--ink);
   padding: 0 5px;
