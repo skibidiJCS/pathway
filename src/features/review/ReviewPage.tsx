@@ -4,7 +4,7 @@ import type {
   ReviewStatus,
   SavedPaper,
 } from "../../../lib/research-types";
-import type { Theme } from "../../app/app-types";
+import type { ReviewFocus, Theme } from "../../app/app-types";
 import { firebaseConfigured } from "../../services/firebase-config";
 import { ReviewAudit } from "./ReviewAudit";
 
@@ -17,6 +17,9 @@ interface ReviewPageProps {
   updates: Paper[];
   checkingUpdates: boolean;
   lastCheckedAt: string | null;
+  focus: ReviewFocus | null;
+  folderFilter: string;
+  onFolderFilterChange: (folder: string) => void;
   onSignIn: () => void;
   onMerge: () => void;
   onDismissMerge: () => void;
@@ -38,6 +41,9 @@ export function ReviewPage({
   updates,
   checkingUpdates,
   lastCheckedAt,
+  focus,
+  folderFilter,
+  onFolderFilterChange,
   onSignIn,
   onMerge,
   onDismissMerge,
@@ -53,16 +59,16 @@ export function ReviewPage({
     <section className="review-page">
       {!firebaseConfigured ? (
         <div className="review-sync-note">
-          Local saving is active. Add the Firebase project values to enable
-          Google sign-in and cross-device sync.
+          Papers are saved on this device. Google sign-in and sync need the
+          Firebase project values.
         </div>
       ) : !signedIn ? (
         <div className="review-sync-note">
-          Stored on this device only.{" "}
-          <button type="button" onClick={onSignIn}>
+          Saved on this device only.{" "}
+          <button type="button" className="text-button" onClick={onSignIn}>
             Sign in with Google
           </button>{" "}
-          to save up to {CLOUD_COLLECTION_LIMIT} papers across devices.
+          to keep up to {CLOUD_COLLECTION_LIMIT} papers in sync across devices
         </div>
       ) : null}
       {mergeCandidate ? (
@@ -72,10 +78,10 @@ export function ReviewPage({
             {mergeCandidate.length === 1 ? "" : "s"} to this synced collection?
           </span>
           <div>
-            <button type="button" onClick={onMerge}>
+            <button type="button" className="button primary" onClick={onMerge}>
               Merge
             </button>
-            <button type="button" onClick={onDismissMerge}>
+            <button type="button" className="button" onClick={onDismissMerge}>
               Keep separate
             </button>
           </div>
@@ -89,6 +95,9 @@ export function ReviewPage({
         updates={updates}
         checkingUpdates={checkingUpdates}
         lastCheckedAt={lastCheckedAt}
+        focus={focus}
+        folderFilter={folderFilter}
+        onFolderFilterChange={onFolderFilterChange}
         onExplore={onExplore}
         onRemove={onRemove}
         onStatusChange={onStatusChange}

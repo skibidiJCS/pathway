@@ -12,7 +12,7 @@ export function BridgePaperList({
   if (papers.length === 0) {
     return (
       <p className="audit-empty-text">
-        No bridge papers are visible in the saved neighborhoods yet.
+        No paper links two of your saved papers yet
       </p>
     );
   }
@@ -27,8 +27,8 @@ export function BridgePaperList({
           >
             {compactTitle(item.paper.title)}
           </button>
-          <span>
-            Connects {item.count} saved papers
+          <span className="tabular">
+            Links {item.count} saved papers
             {item.referencedByCount
               ? ` · cited by ${item.referencedByCount}`
               : ""}
@@ -63,7 +63,7 @@ export function AuditPaperList({
           >
             {compactTitle(item.paper.title)}
           </button>
-          <span>Cited by {item.count} saved papers</span>
+          <span className="tabular">Cited by {item.count} saved papers</span>
         </li>
       ))}
     </ul>

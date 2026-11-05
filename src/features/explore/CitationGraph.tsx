@@ -1,3 +1,4 @@
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   sortCitationPapers,
@@ -5,60 +6,62 @@ import {
 } from "../../../lib/graph-view";
 import type { CitationGraphData, Paper } from "../../../lib/research-types";
 
+type Relation = "reference" | "citing";
+
 interface CitationGraphProps {
   graph: CitationGraphData;
   visibleNodes: Paper[];
   selectedId: string;
-  theme: "light" | "dark";
   onSelect: (paper: Paper) => void;
 }
 
-function relationPapers(
-  papers: Paper[],
-  relation: "reference" | "citing",
-): Paper[] {
+function relationPapers(papers: Paper[], relation: Relation): Paper[] {
   return papers.filter(
     (paper) => paper.relation === relation || paper.relation === "both",
   );
 }
 
-function groupLabel(count: number, relation: "reference" | "citing"): string {
-  if (relation === "reference") {
-    return `References (${count})`;
-  }
-  return `Citing papers (${count})`;
+/** Log scale, so one landmark paper does not flatten every other bar. */
+function citationWeight(count: number, max: number): number {
+  if (max <= 0) return 0;
+  return Math.log10(count + 1) / Math.log10(max + 1);
 }
 
-interface PaperSheetProps {
+interface PaperRowProps {
   paper: Paper;
   active: boolean;
+  weight: number;
   onSelect: (paper: Paper) => void;
 }
 
-function PaperSheet({ paper, active, onSelect }: PaperSheetProps) {
+function PaperRow({ paper, active, weight, onSelect }: PaperRowProps) {
   return (
-    <button
-      className={`paper-sheet ${paper.relation}${active ? " active" : ""}`}
-      type="button"
-      onClick={() => onSelect(paper)}
-      aria-pressed={active}
-      title={paper.title}
-    >
-      <span className="paper-sheet-title">{paper.title}</span>
-      <span className="paper-sheet-meta">
-        {paper.year ?? "Year unknown"} ·{" "}
-        {paper.citationCount.toLocaleString()} citations
-      </span>
-      {paper.relation === "both" ? (
-        <span className="paper-sheet-relation">Mutual citation</span>
-      ) : null}
-    </button>
+    <li>
+      <button
+        className={`paper-row${active ? " active" : ""}`}
+        type="button"
+        onClick={() => onSelect(paper)}
+        aria-pressed={active}
+      >
+        <span className="paper-row-title">{paper.title}</span>
+        <span className="paper-row-meta tabular">
+          <span>{paper.year ?? "n.d."}</span>
+          <span>{paper.citationCount.toLocaleString()} citations</span>
+          {paper.relation === "both" ? (
+            <span className="mutual">Cites each other</span>
+          ) : null}
+        </span>
+        <span className="citation-bar" aria-hidden="true">
+          <span style={{ transform: `scaleX(${weight.toFixed(3)})` }} />
+        </span>
+      </button>
+    </li>
   );
 }
 
 interface PaperGroupProps {
   papers: Paper[];
-  relation: "reference" | "citing";
+  relation: Relation;
   sort: PaperSort;
   selectedId: string;
   onSelect: (paper: Paper) => void;
@@ -74,22 +77,32 @@ function PaperGroup({
   onSort,
 }: PaperGroupProps) {
   const isReference = relation === "reference";
+  const maxCitations = useMemo(
+    () => papers.reduce((max, paper) => Math.max(max, paper.citationCount), 0),
+    [papers],
+  );
+  const Icon = isReference ? ArrowDownLeft : ArrowUpRight;
 
   return (
     <section
       className={`paper-group ${relation}${papers.length === 0 ? " empty" : ""}`}
-      aria-label={isReference ? "References" : "Citing papers"}
+      aria-label={isReference ? "References" : "Cited by"}
     >
       <header className="paper-group-heading">
-        <div>
-          <strong>{groupLabel(papers.length, relation)}</strong>
-          <span>
+        <div className="paper-group-title">
+          <h2>
+            <Icon size={16} strokeWidth={1.5} aria-hidden />
+            {isReference ? "References" : "Cited by"}
+            <span className="count tabular">{papers.length}</span>
+          </h2>
+          <p>
             {isReference
-              ? "The selected paper cites these"
-              : "These papers cite the selected paper"}
-          </span>
+              ? "Earlier work this paper cites"
+              : "Later work that cites this paper"}
+          </p>
         </div>
         <select
+          className="compact-select"
           value={sort}
           onChange={(event) => onSort(event.target.value as PaperSort)}
           aria-label={`Sort ${isReference ? "references" : "citing papers"}`}
@@ -101,19 +114,22 @@ function PaperGroup({
         </select>
       </header>
       {papers.length > 0 ? (
-        <div className="paper-grid">
+        <ol className="paper-list">
           {papers.map((paper) => (
-            <PaperSheet
+            <PaperRow
               key={`${relation}-${paper.id}`}
               paper={paper}
               active={paper.id === selectedId}
+              weight={citationWeight(paper.citationCount, maxCitations)}
               onSelect={onSelect}
             />
           ))}
-        </div>
+        </ol>
       ) : (
         <p className="paper-group-empty">
-          No records available from OpenAlex.
+          {isReference
+            ? "OpenAlex lists no references for this paper, or the filters hide them"
+            : "OpenAlex lists no citing papers yet, or the filters hide them"}
         </p>
       )}
     </section>
@@ -124,11 +140,11 @@ export function CitationGraph({
   graph,
   visibleNodes,
   selectedId,
-  theme,
   onSelect,
 }: CitationGraphProps) {
   const [referenceSort, setReferenceSort] = useState<PaperSort>("relevance");
   const [citingSort, setCitingSort] = useState<PaperSort>("relevance");
+  const [mobileTab, setMobileTab] = useState<Relation>("reference");
   const selected =
     visibleNodes.find((paper) => paper.id === graph.centerId) ??
     graph.nodes.find((paper) => paper.id === graph.centerId) ??
@@ -159,57 +175,70 @@ export function CitationGraph({
   useEffect(() => {
     setReferenceSort("relevance");
     setCitingSort("relevance");
+    setMobileTab("reference");
   }, [graph.centerId]);
-  const layoutClasses = [
-    "citation-map",
-    references.length === 0 ? "no-references" : "",
-    citing.length === 0 ? "no-citing" : "",
-    `theme-${theme}`,
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   return (
     <div
-      className={layoutClasses}
-      aria-label={`Citation map with ${references.length} references that the selected paper cites and ${citing.length} papers that cite the selected paper.`}
+      className={`citation-map show-${mobileTab}`}
+      aria-label={`${references.length} references and ${citing.length} citing papers`}
     >
-      <section className="selected-paper-column" aria-label="Selected paper">
-        <span className="selected-paper-label">Selected paper</span>
-        {selected ? (
+      {selected ? (
+        <header className="center-paper">
+          <span className="center-label">Citation neighborhood of</span>
           <button
-            className="selected-paper-summary"
+            className={`center-title${selected.id === selectedId ? " active" : ""}`}
             type="button"
             onClick={() => onSelect(selected)}
             aria-pressed={selected.id === selectedId}
-            title={selected.title}
           >
-            <span className="selected-paper-title">{selected.title}</span>
-            <span className="selected-paper-meta">
-              {selected.year ?? "Year unknown"} ·{" "}
-              {selected.citationCount.toLocaleString()} citations
-            </span>
+            {selected.title}
           </button>
-        ) : null}
-      </section>
+          <span className="center-meta tabular">
+            {selected.year ?? "n.d."} ·{" "}
+            {selected.citationCount.toLocaleString()} citations ·{" "}
+            {visibleNodes.length} of {graph.nodes.length} papers shown
+          </span>
+        </header>
+      ) : null}
 
-      <PaperGroup
-        papers={references}
-        relation="reference"
-        sort={referenceSort}
-        selectedId={selectedId}
-        onSelect={onSelect}
-        onSort={setReferenceSort}
-      />
+      <div className="relation-tabs" role="tablist" aria-label="Citation direction">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === "reference"}
+          onClick={() => setMobileTab("reference")}
+        >
+          References <span className="tabular">{references.length}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === "citing"}
+          onClick={() => setMobileTab("citing")}
+        >
+          Cited by <span className="tabular">{citing.length}</span>
+        </button>
+      </div>
 
-      <PaperGroup
-        papers={citing}
-        relation="citing"
-        sort={citingSort}
-        selectedId={selectedId}
-        onSelect={onSelect}
-        onSort={setCitingSort}
-      />
+      <div className="relation-columns">
+        <PaperGroup
+          papers={references}
+          relation="reference"
+          sort={referenceSort}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          onSort={setReferenceSort}
+        />
+        <PaperGroup
+          papers={citing}
+          relation="citing"
+          sort={citingSort}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          onSort={setCitingSort}
+        />
+      </div>
     </div>
   );
 }

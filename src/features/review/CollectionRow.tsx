@@ -38,7 +38,7 @@ export function CollectionRow({
 
   return (
     <article className="collection-row">
-      <span className="collection-index">
+      <span className="collection-index tabular">
         {String(index + 1).padStart(2, "0")}
       </span>
       <div className="collection-main">
@@ -49,10 +49,10 @@ export function CollectionRow({
         >
           {entry.paper.title}
         </button>
-        <span className="collection-meta">
-          {entry.paper.year ?? "Year unknown"} ·{" "}
+        <span className="collection-meta tabular">
+          {entry.paper.year ?? "n.d."} ·{" "}
           {entry.paper.citationCount.toLocaleString()} citations ·{" "}
-          {entry.paper.isOpenAccess ? "Open access" : "Closed"}
+          {entry.paper.isOpenAccess ? "Open access" : "Closed access"}
         </span>
         <div className="collection-organize">
           <label>
@@ -100,7 +100,7 @@ export function CollectionRow({
             onNoteChange(entry.paper.id, event.target.value)
           }
           aria-label={`Private note for ${entry.paper.title}`}
-          placeholder="Private note…"
+          placeholder="Private note"
           maxLength={2000}
           rows={1}
         />
@@ -120,7 +120,11 @@ export function CollectionRow({
           <option value="reviewed">Reviewed</option>
           <option value="used">Used</option>
         </select>
-        <button type="button" onClick={() => onRemove(entry.paper.id)}>
+        <button
+          type="button"
+          className="button quiet"
+          onClick={() => onRemove(entry.paper.id)}
+        >
           Remove
         </button>
       </div>

@@ -1,10 +1,26 @@
 import { useEffect, useState } from "react";
 import type { Theme } from "../app-types";
 
-export function useInterfacePreferences() {
-  const [compactSearchPlaceholder, setCompactSearchPlaceholder] = useState(
-    () => window.matchMedia("(max-width: 620px)").matches,
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () => window.matchMedia(query).matches,
   );
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [query]);
+
+  return matches;
+}
+
+export function useInterfacePreferences() {
+  const compactSearchPlaceholder = useMediaQuery("(max-width: 620px)");
+  /** Below this width the sidebar becomes a drawer. Keep in sync with globals.css. */
+  const compactLayout = useMediaQuery("(max-width: 1023px)");
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
@@ -16,15 +32,6 @@ export function useInterfacePreferences() {
     } catch {}
   }, [theme]);
 
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 620px)");
-    const updatePlaceholder = () =>
-      setCompactSearchPlaceholder(media.matches);
-    updatePlaceholder();
-    media.addEventListener("change", updatePlaceholder);
-    return () => media.removeEventListener("change", updatePlaceholder);
-  }, []);
-
   const toggleTheme = () => {
     const nextTheme: Theme =
       document.documentElement.dataset.theme === "dark" ? "light" : "dark";
@@ -32,5 +39,5 @@ export function useInterfacePreferences() {
     setTheme(nextTheme);
   };
 
-  return { compactSearchPlaceholder, theme, toggleTheme };
+  return { compactSearchPlaceholder, compactLayout, theme, toggleTheme };
 }

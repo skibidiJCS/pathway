@@ -41,12 +41,14 @@ function relationshipLabel(
 
 function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
   const dark = theme === "dark";
-  const paper = dark ? "#151f2b" : "#ffffff";
-  const paperSelected = dark ? "#1a2531" : "#f2f4f6";
-  const edge = dark ? "#687586" : "#9099a4";
-  const blue = dark ? "#8aa7c4" : "#3f6489";
-  const border = dark ? "#526173" : "#b7c0ca";
-  const selected = dark ? "#c49a6b" : "#94602d";
+  // Same ramp and ink as globals.css.
+  const paper = dark ? "#19191b" : "#ffffff";
+  const paperSelected = dark ? "#232325" : "#f0eeea";
+  const edge = dark ? "#5c5c62" : "#a8a39b";
+  const ink = dark ? "#ededed" : "#1c1a17";
+  const blue = dark ? "#a1a1a6" : "#57534c";
+  const border = dark ? "#3a3a3e" : "#d6d2cb";
+  const selected = dark ? "#e0907f" : "#8c2f24";
   const transition =
     "background-color, border-color, border-width, color, height, line-color, opacity, source-arrow-color, target-arrow-color, width";
 
@@ -57,10 +59,10 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
         "background-color": paper,
         "border-color": border,
         "border-width": 1,
-        color: blue,
-        "font-family": 'Georgia, "Times New Roman", serif',
-        "font-size": 10,
-        "font-weight": 500,
+        color: ink,
+        "font-family": '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif',
+        "font-size": 11,
+        "font-weight": 400,
         height: 167,
         label: "data(label)",
         "line-height": 1.25,
@@ -69,9 +71,9 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
         "text-max-width": "96px",
         "text-valign": "center",
         "text-wrap": "wrap",
-        "transition-duration": 360,
+        "transition-duration": 180,
         "transition-property": transition,
-        "transition-timing-function": "ease-in-out",
+        "transition-timing-function": "ease-out",
         width: 118,
       },
     },
@@ -98,9 +100,9 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
         "line-color": edge,
         "line-style": "solid",
         "target-arrow-color": blue,
-        "transition-duration": 360,
+        "transition-duration": 180,
         "transition-property": transition,
-        "transition-timing-function": "ease-in-out",
+        "transition-timing-function": "ease-out",
         width: 1.5,
       },
     },
@@ -113,7 +115,7 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
     {
       selector: 'edge[kind = "content"]',
       style: {
-        "line-color": dark ? "#6f879f" : "#8095a9",
+        "line-color": edge,
         "line-style": "dotted",
         width: 1.25,
       },
@@ -291,10 +293,9 @@ export function SavedGraph({
         ) : (
           <>
             <span className="saved-map-kicker">No links found</span>
-            <h3>The selected papers are disconnected.</h3>
+            <h3>No links between these papers</h3>
             <p>
-              Their stored citation neighborhoods and OpenAlex topics do not
-              overlap.
+              Their stored citation lists and OpenAlex topics do not overlap
             </p>
           </>
         )}

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { Download, Network, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   calculateAudit,
   collectionToBibtex,
@@ -10,6 +11,7 @@ import type {
   ReviewStatus,
   SavedPaper,
 } from "../../../lib/research-types";
+import type { ReviewFocus } from "../../app/app-types";
 import { AuditPaperList, BridgePaperList } from "./AuditPaperLists";
 import { CollectionRow } from "./CollectionRow";
 import { SavedGraph } from "./SavedGraph";
@@ -23,6 +25,9 @@ interface ReviewAuditProps {
   checkingUpdates: boolean;
   lastCheckedAt: string | null;
   theme: "light" | "dark";
+  focus: ReviewFocus | null;
+  folderFilter: string;
+  onFolderFilterChange: (folder: string) => void;
   onExplore: (paper: Paper) => void;
   onRemove: (paperId: string) => void;
   onStatusChange: (paperId: string, status: ReviewStatus) => void;
@@ -40,6 +45,9 @@ export function ReviewAudit({
   checkingUpdates,
   lastCheckedAt,
   theme,
+  focus,
+  folderFilter,
+  onFolderFilterChange: setFolderFilter,
   onExplore,
   onRemove,
   onStatusChange,
@@ -52,8 +60,8 @@ export function ReviewAudit({
   const [firstId, setFirstId] = useState(collection[0]?.paper.id ?? "");
   const [secondId, setSecondId] = useState(collection[1]?.paper.id ?? "");
   const [mapOpen, setMapOpen] = useState(false);
-  const [folderFilter, setFolderFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+  const handledFocus = useRef(0);
   const [mappedIds, setMappedIds] = useState<string[]>(() =>
     collection.slice(0, 25).map((entry) => entry.paper.id),
   );
@@ -118,14 +126,28 @@ export function ReviewAudit({
     if (tagFilter && !tags.includes(tagFilter)) setTagFilter("");
   }, [folderFilter, folders, tagFilter, tags]);
 
+  useEffect(() => {
+    if (!focus || focus.request === handledFocus.current) return;
+    handledFocus.current = focus.request;
+    if (focus.section === "map" && collection.length >= 2) setMapOpen(true);
+    const frame = window.requestAnimationFrame(() => {
+      const target =
+        document.getElementById(`review-${focus.section}`) ??
+        document.getElementById("review-collection");
+      target?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [collection.length, focus]);
+
   if (collection.length === 0) {
     return (
       <section className="review-empty">
-        <span className="review-kicker">Saved literature</span>
-        <h1>Your collection is empty.</h1>
+        <span className="review-kicker">Saved papers</span>
+        <h1>Nothing saved yet</h1>
         <p>
-          Save a paper from its details panel to build a private reading list,
-          compare references, and check coverage.
+          Save a paper from its reading panel to start a private reading list.
+          With two or more saved papers you can map them, compare their
+          references and find the papers your list is missing.
         </p>
         <span className="collection-capacity">
           {synced ? "Google-synced" : "Stored on this device"} · 0/{limit}
@@ -143,33 +165,38 @@ export function ReviewAudit({
       <header className="review-heading">
         <div>
           <span className="review-kicker">
-            {synced ? "Google-synced collection" : "Local collection"}
+            {synced ? "Synced with Google" : "Saved on this device"} ·{" "}
+            <span className="tabular">
+              {collection.length}/{limit}
+            </span>
           </span>
           <h1>
             {collection.length} saved paper{collection.length === 1 ? "" : "s"}
           </h1>
-          <span className="collection-capacity">
-            {collection.length}/{limit} papers
-          </span>
         </div>
         <div className="review-heading-actions">
           <button
             type="button"
+            className="button"
             onClick={() => setMapOpen((open) => !open)}
             disabled={collection.length < 2}
             aria-expanded={mapOpen}
           >
+            <Network size={16} strokeWidth={1.5} aria-hidden />
             {mapOpen ? "Close map" : "Map papers"}
           </button>
           <button
             type="button"
+            className="button"
             onClick={onCheckUpdates}
             disabled={checkingUpdates}
           >
-            {checkingUpdates ? "Checking…" : "Check for new papers"}
+            <RefreshCw size={16} strokeWidth={1.5} aria-hidden />
+            {checkingUpdates ? "Checking…" : "Check for new citing papers"}
           </button>
           <button
             type="button"
+            className="button"
             onClick={() =>
               downloadFile(
                 "pathway-review.csv",
@@ -178,10 +205,12 @@ export function ReviewAudit({
               )
             }
           >
+            <Download size={16} strokeWidth={1.5} aria-hidden />
             CSV
           </button>
           <button
             type="button"
+            className="button"
             onClick={() =>
               downloadFile(
                 "pathway-review.bib",
@@ -190,16 +219,18 @@ export function ReviewAudit({
               )
             }
           >
+            <Download size={16} strokeWidth={1.5} aria-hidden />
             BibTeX
           </button>
         </div>
       </header>
 
-      <div className="updates-line" role="status">
-        <span>{checkedLabel(lastCheckedAt)}</span>
-        {updates.length > 0 ? (
-          <span>{updates.length} new citing papers found</span>
-        ) : null}
+      <div className="updates-line" id="review-updates" role="status">
+        <span>New citing papers</span>
+        <span>
+          {checkedLabel(lastCheckedAt)}
+          {updates.length > 0 ? ` · ${updates.length} found` : ""}
+        </span>
       </div>
 
       {updates.length > 0 ? (
@@ -212,8 +243,8 @@ export function ReviewAudit({
               title={paper.title}
             >
               <strong>{compactTitle(paper.title, 52)}</strong>
-              <span>
-                {paper.year ?? "Year unknown"} ·{" "}
+              <span className="tabular">
+                {paper.year ?? "n.d."} ·{" "}
                 {paper.citationCount.toLocaleString()} citations
               </span>
             </button>
@@ -221,33 +252,40 @@ export function ReviewAudit({
         </section>
       ) : null}
 
-      <div className="audit-stats">
-        <span>
-          <strong>{audit.openAccessCount}</strong> open access ({openPercent}%)
-        </span>
-        <span>
-          <strong>{audit.totalCitations.toLocaleString()}</strong> total citations
-        </span>
-        <span>
-          <strong>{audit.medianCitations.toLocaleString()}</strong> median citations
-        </span>
-        <span>
-          <strong>{audit.years.length}</strong> publication years
-        </span>
-      </div>
+      <dl className="audit-stats">
+        <div>
+          <dt>Open access</dt>
+          <dd className="tabular">
+            {audit.openAccessCount}
+            <span> of {collection.length} · {openPercent}%</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Median citations</dt>
+          <dd className="tabular">{audit.medianCitations.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Total citations</dt>
+          <dd className="tabular">{audit.totalCitations.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Publication years</dt>
+          <dd className="tabular">{audit.years.length}</dd>
+        </div>
+      </dl>
 
       {mapOpen ? (
-        <section className="saved-map-section" aria-label="Saved paper map">
+        <section className="saved-map-section" id="review-map" aria-label="Saved paper map">
           <header className="saved-map-heading">
             <div>
-              <h2>Saved paper map</h2>
+              <h2>Paper map</h2>
               <p>
-                Select up to 25 papers. Arrows show direct citations; dashed
-                lines show shared citation neighborhoods; dotted lines show
-                shared OpenAlex topics.
+                Choose up to 25 papers. Arrows are direct citations, dashed
+                lines are shared references or citing papers, dotted lines are
+                shared OpenAlex topics
               </p>
             </div>
-            <span>{mappedIds.length} selected</span>
+            <span className="tabular">{mappedIds.length} of 25 selected</span>
           </header>
           <div className="saved-map-selector">
             {collection.map((entry) => {
@@ -277,18 +315,15 @@ export function ReviewAudit({
             theme={theme}
             onExplore={onExplore}
           />
-          <p className="saved-map-note">
-            Connections use stored citation neighborhoods and OpenAlex topic
-            metadata.
-          </p>
+
         </section>
       ) : null}
 
       <div className="review-layout">
-        <section className="collection-section">
+        <section className="collection-section" id="review-collection">
           <div className="collection-heading">
-            <h2>Saved collection</h2>
-            <span>
+            <h2>Reading list</h2>
+            <span className="tabular">
               {visibleCollection.length === collection.length
                 ? `${collection.length} papers`
                 : `${visibleCollection.length} of ${collection.length}`}
@@ -341,14 +376,14 @@ export function ReviewAudit({
             ))}
             {visibleCollection.length === 0 ? (
               <p className="collection-filter-empty">
-                No papers match these filters.
+                No saved papers match these filters
               </p>
             ) : null}
           </div>
         </section>
 
         <div className="audit-column">
-          <section className="audit-section">
+          <section className="audit-section" id="review-coverage">
             <h2>Coverage</h2>
             <div className="coverage-grid">
               <div>
@@ -367,17 +402,17 @@ export function ReviewAudit({
                         .slice(0, 8)
                         .map((item) => `${item.label} (${item.count})`)
                         .join(" · ")
-                    : "Topic metadata is unavailable for these records."}
+                    : "OpenAlex has no topics for these papers"}
                 </p>
               </div>
             </div>
           </section>
 
-          <section className="audit-section">
+          <section className="audit-section" id="review-bridges">
             <h2>Bridge papers</h2>
             <p className="audit-section-intro">
-              Papers connecting at least two saved papers through their stored
-              references or citing-paper lists.
+              Papers that link two or more of your saved papers through their
+              references or citing papers
             </p>
             <BridgePaperList
               papers={audit.bridgePapers.slice(0, 8)}
@@ -385,29 +420,32 @@ export function ReviewAudit({
             />
           </section>
 
-          <section className="audit-section">
+          <section className="audit-section" id="review-overlap">
             <h2>Reference overlap</h2>
             <div className="coverage-grid">
               <div>
-                <h3>Shared references ({audit.sharedReferences.length})</h3>
+                <h3>
+                  Shared references{" "}
+                  <span className="tabular">{audit.sharedReferences.length}</span>
+                </h3>
                 <AuditPaperList
                   papers={audit.sharedReferences.slice(0, 6)}
-                  empty="No references are shared by two saved papers yet."
+                  empty="No two saved papers share a reference yet"
                   onExplore={onExplore}
                 />
               </div>
               <div>
-                <h3>Strongest omissions</h3>
+                <h3>Often cited, not saved</h3>
                 <AuditPaperList
                   papers={audit.missingFrequentPapers.slice(0, 6)}
-                  empty="No repeatedly cited omissions are visible yet."
+                  empty="Nothing is cited repeatedly that you have not saved"
                   onExplore={onExplore}
                 />
               </div>
             </div>
           </section>
 
-          <section className="audit-section comparison-section">
+          <section className="audit-section comparison-section" id="review-compare">
             <div className="comparison-heading">
               <h2>Compare two papers</h2>
               <div>
@@ -444,33 +482,33 @@ export function ReviewAudit({
             </div>
             {comparison ? (
               <>
-                <div className="comparison-counts">
-                  <span>
-                    <strong>{comparison.sharedReferences.length}</strong> shared
-                    references
-                  </span>
-                  <span>
-                    <strong>{comparison.firstOnlyReferences.length}</strong> unique
-                    to first
-                  </span>
-                  <span>
-                    <strong>{comparison.secondOnlyReferences.length}</strong>{" "}
-                    unique to second
-                  </span>
-                  <span>
-                    <strong>{comparison.commonCitingPapers.length}</strong> common
-                    citing papers
-                  </span>
-                </div>
+                <dl className="comparison-counts">
+                  <div>
+                    <dt>Shared references</dt>
+                    <dd className="tabular">{comparison.sharedReferences.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Only in first</dt>
+                    <dd className="tabular">{comparison.firstOnlyReferences.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Only in second</dt>
+                    <dd className="tabular">{comparison.secondOnlyReferences.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Common citing papers</dt>
+                    <dd className="tabular">{comparison.commonCitingPapers.length}</dd>
+                  </div>
+                </dl>
                 <p className="direct-relationship">
                   {comparison.directRelationships.length
                     ? comparison.directRelationships.join(" · ")
-                    : "No direct citation relationship appears in the stored neighborhoods."}
+                    : "Neither paper cites the other in the stored citation lists"}
                 </p>
               </>
             ) : (
               <p className="audit-empty-text">
-                Save at least two papers to compare them.
+                Save at least two papers to compare them
               </p>
             )}
           </section>

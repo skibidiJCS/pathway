@@ -188,7 +188,7 @@ export function useCollectionManager(graph: CitationGraphData | null) {
         if (accountRef.current?.uid === activeAccount.uid) {
           setSyncState("error");
           setNotice(
-            "This change is cached locally and will need to be synced again.",
+            "This change is cached locally and will need to be synced again",
           );
         }
       }
@@ -246,12 +246,12 @@ export function useCollectionManager(graph: CitationGraphData | null) {
       if (activeAccount) scheduleCloudSave(activeAccount, entry);
       setNotice(
         activeAccount
-          ? "Paper saved to your synced collection."
-          : "Paper saved on this device.",
+          ? "Paper saved to your synced collection"
+          : "Paper saved on this device",
       );
     } catch (error) {
       setNotice(
-        error instanceof Error ? error.message : "The paper could not be saved.",
+        error instanceof Error ? error.message : "The paper could not be saved",
       );
     } finally {
       setSavingPaperId(null);
@@ -278,7 +278,7 @@ export function useCollectionManager(graph: CitationGraphData | null) {
         .then(() => setSyncState("ready"))
         .catch(() => {
           setSyncState("error");
-          setNotice("The paper was removed here, but Google sync failed.");
+          setNotice("The paper was removed here, but Google sync failed");
         });
     }
   };
@@ -314,7 +314,7 @@ export function useCollectionManager(graph: CitationGraphData | null) {
   const signIn = async () => {
     if (!firebaseConfigured) {
       setNotice(
-        "Google sync needs the Firebase project values listed in the setup guide.",
+        "Google sync needs the Firebase project values listed in the setup guide",
       );
       return;
     }
@@ -326,7 +326,7 @@ export function useCollectionManager(graph: CitationGraphData | null) {
       await signInWithGoogle();
     } catch (error) {
       setNotice(
-        error instanceof Error ? error.message : "Google sign-in was cancelled.",
+        error instanceof Error ? error.message : "Google sign-in was cancelled",
       );
     } finally {
       setAuthBusy(false);
@@ -355,10 +355,10 @@ export function useCollectionManager(graph: CitationGraphData | null) {
       await mergeIntoCloud(activeAccount.uid, merged);
       setMergeCandidate(null);
       setSyncState("ready");
-      setNotice("Local papers were added to your Google-synced collection.");
+      setNotice("Local papers were added to your Google-synced collection");
     } catch {
       setSyncState("error");
-      setNotice("The merge is cached locally, but Google sync failed.");
+      setNotice("The merge is cached locally, but Google sync failed");
     }
   };
 
@@ -400,7 +400,7 @@ export function useCollectionManager(graph: CitationGraphData | null) {
       setNotice(
         error instanceof Error
           ? error.message
-          : "New citing papers could not be checked.",
+          : "New citing papers could not be checked",
       );
     } finally {
       setCheckingUpdates(false);
