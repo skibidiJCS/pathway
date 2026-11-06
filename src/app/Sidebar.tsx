@@ -8,8 +8,8 @@ import {
   Moon,
   Network,
   RefreshCw,
-  SearchCheck,
   Sun,
+  Waypoints,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +24,7 @@ interface SidebarProps {
   activeFolder: string;
   collection: SavedPaper[];
   updatesCount: number;
+  suggestedCount: number;
   account: PathwayAccount | null;
   syncState: SyncState;
   theme: Theme;
@@ -43,8 +44,8 @@ const libraryLinks: Array<{
   label: string;
   icon: LucideIcon;
 }> = [
+  { view: "suggested", label: "Suggested", icon: Waypoints },
   { view: "library", label: "Reading list", icon: Bookmark },
-  { view: "gaps", label: "Find gaps", icon: SearchCheck },
   { view: "map", label: "Map", icon: Network },
   { view: "compare", label: "Compare two", icon: GitCompareArrows },
   { view: "updates", label: "New citing papers", icon: RefreshCw },
@@ -89,6 +90,7 @@ export function Sidebar({
   activeFolder,
   collection,
   updatesCount,
+  suggestedCount,
   account,
   syncState,
   theme,
@@ -172,6 +174,8 @@ export function Sidebar({
                 meta={
                   link.view === "library"
                     ? String(collection.length)
+                    : link.view === "suggested" && suggestedCount > 0
+                      ? String(suggestedCount)
                     : link.view === "updates" && updatesCount > 0
                       ? String(updatesCount)
                       : undefined

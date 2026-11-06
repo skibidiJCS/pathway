@@ -818,6 +818,21 @@ input.search-input:focus-visible {
   margin-top: 32px;
 }
 
+.home-suggested {
+  margin-top: 16px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.home-suggested:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .home-continue {
   margin-top: 48px;
   width: 100%;
@@ -902,6 +917,12 @@ input.search-input:focus-visible {
   align-items: center;
   padding: 8px 24px;
   border-bottom: 1px solid var(--line);
+}
+
+.workspace-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
 }
 
 .workspace-panes {

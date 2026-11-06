@@ -6,6 +6,6 @@ export type View =
   | "library"
   | "map"
   | "compare"
-  | "gaps"
+  | "suggested"
   | "updates";
 export type LibraryView = Exclude<View, "explore">;

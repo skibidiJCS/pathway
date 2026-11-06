@@ -8,10 +8,11 @@ import { Workspace, type WorkspaceTab } from "../features/workspace/Workspace";
 import { LibraryPage, SyncPrompt } from "../features/library/LibraryPage";
 import {
   ComparePage,
-  GapsPage,
   MapPage,
   UpdatesPage,
 } from "../features/library/ToolPages";
+import { SuggestedView } from "../features/workspace/SuggestedView";
+import { suggestPapers } from "../../lib/suggestions";
 import type { Route } from "../../lib/routes";
 import type { LibraryView, View } from "./app-types";
 import { GoogleSignInButton } from "./GoogleSignInButton";
@@ -31,9 +32,7 @@ export function PathwayApp() {
       ? "explore"
       : route.view === "list"
         ? "library"
-        : route.view === "suggested"
-          ? "gaps"
-          : route.view;
+        : route.view;
   /** Full paper data for a follow, so the loading view can show its title. */
   const pendingPaper = useRef<Paper | null>(null);
   const requestedId = useRef<string | null>(null);
@@ -101,6 +100,10 @@ export function PathwayApp() {
     () => new Set(collection.map((entry) => entry.paper.id)),
     [collection],
   );
+  const suggestions = useMemo(
+    () => suggestPapers(collection, screening.skipped),
+    [collection, screening.skipped],
+  );
   const workspaceSelected =
     graph && graphState === "ready" && selectedPaper && selectedPaper.id !== graph.centerId
       ? selectedPaper
@@ -166,7 +169,7 @@ export function PathwayApp() {
 
   const pageRoute: Record<LibraryView, Route> = {
     library: { view: "list" },
-    gaps: { view: "suggested" },
+    suggested: { view: "suggested" },
     map: { view: "map" },
     compare: { view: "compare" },
     updates: { view: "updates" },
@@ -229,6 +232,7 @@ export function PathwayApp() {
         activeFolder={folderFilter}
         collection={collection}
         updatesCount={updates.length}
+        suggestedCount={suggestions.length}
         account={account}
         syncState={syncState}
         theme={theme}
@@ -275,6 +279,8 @@ export function PathwayApp() {
               search={search("hero")}
               accessory={compactLayout ? null : signInButton(false)}
               lastPaper={explorationHistory[0] ?? null}
+              suggestedCount={suggestions.length}
+              onSuggested={() => navigate({ view: "suggested" })}
               onContinue={follow}
             />
           </div>
@@ -332,6 +338,22 @@ export function PathwayApp() {
               />
             )}
           </>
+        ) : view === "suggested" ? (
+          <SuggestedView
+            suggestions={suggestions}
+            savedCount={collection.length}
+            screen={screening.map}
+            savedIds={savedIds}
+            savingId={savingPaperId}
+            collectionFull={collectionFull}
+            onSeen={screening.seen}
+            onSave={(paper) => void handleSave(paper)}
+            onRemove={handleRemove}
+            onSkip={screening.skip}
+            onUnskip={screening.unskip}
+            onFollow={follow}
+            onStartExploring={explore}
+          />
         ) : (
           <div className="scroll-area">
             {view === "library" ? (
@@ -355,9 +377,7 @@ export function PathwayApp() {
             ) : (
               <div className="page">
                 <SyncPrompt signInButton={signInButton(false)} />
-                {view === "gaps" ? (
-                  <GapsPage {...toolProps} />
-                ) : view === "map" ? (
+                {view === "map" ? (
                   <MapPage
                     collection={collection}
                     theme={theme}

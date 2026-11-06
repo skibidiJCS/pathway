@@ -6,11 +6,15 @@ export function HomeView({
   search,
   accessory,
   lastPaper,
+  suggestedCount,
+  onSuggested,
   onContinue,
 }: {
   search: ReactNode;
   accessory: ReactNode;
   lastPaper: Paper | null;
+  suggestedCount: number;
+  onSuggested: () => void;
   onContinue: (paper: Paper) => void;
 }) {
   return (
@@ -19,6 +23,12 @@ export function HomeView({
       <div className="home-inner">
         <h1 className="home-title">See what any paper cites, and what cites it</h1>
         <div className="home-search">{search}</div>
+        {suggestedCount > 0 ? (
+          <button type="button" className="home-suggested" onClick={onSuggested}>
+            {suggestedCount} suggested paper{suggestedCount === 1 ? "" : "s"}
+            <ArrowRight size={16} strokeWidth={1.75} aria-hidden />
+          </button>
+        ) : null}
         {lastPaper ? (
           <button
             type="button"

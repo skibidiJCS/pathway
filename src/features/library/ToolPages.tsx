@@ -1,9 +1,6 @@
 import { Compass, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  calculateAudit,
-  compareSavedPapers,
-} from "../../../lib/collection";
+import { compareSavedPapers } from "../../../lib/collection";
 import type { Paper, SavedPaper } from "../../../lib/research-types";
 import type { Theme } from "../../app/app-types";
 import { EmptyState, PageHeader } from "./PageHeader";
@@ -56,112 +53,6 @@ function NeedsPapers({
       You have saved {plural(count, "paper")} so far. Open a paper while
       exploring and press Save
     </EmptyState>
-  );
-}
-
-/* ---------- Find gaps ---------- */
-
-export function GapsPage({
-  collection,
-  collectionFull,
-  savingId,
-  onExplore,
-  onSave,
-  onStartExploring,
-}: ToolProps) {
-  const audit = useMemo(() => calculateAudit(collection), [collection]);
-  const savedIds = useSavedIds(collection);
-
-  return (
-    <div className="page-body">
-      <PageHeader
-        title="Find gaps"
-        description="Papers your reading list keeps pointing to that you have not saved yet"
-      />
-      {collection.length < 2 ? (
-        <NeedsPapers
-          count={collection.length}
-          needed={2}
-          what="find gaps"
-          onStartExploring={onStartExploring}
-        />
-      ) : (
-        <div className="tool-sections">
-          <section className="tool-section lead">
-            <h2>Often cited, not saved</h2>
-            <p className="section-intro">
-              Cited by several of your papers. Usually the first thing to read
-              next
-            </p>
-            <PaperLinkList
-              items={audit.missingFrequentPapers.slice(0, 8).map((item) => ({
-                paper: item.paper,
-                note: `cited by ${item.count} of yours`,
-              }))}
-              empty="Nothing yet. Save papers from the same field to see patterns"
-              savedIds={savedIds}
-              savingId={savingId}
-              canSave={!collectionFull}
-              onExplore={onExplore}
-              onSave={onSave}
-            />
-          </section>
-
-          <section className="tool-section">
-            <h2>Bridge papers</h2>
-            <p className="section-intro">
-              Connect two or more of your papers through what they cite or what
-              cites them
-            </p>
-            <PaperLinkList
-              items={audit.bridgePapers.slice(0, 8).map((item) => ({
-                paper: item.paper,
-                note: `connects ${item.count} of yours`,
-              }))}
-              empty="No bridges between your papers yet"
-              savedIds={savedIds}
-              savingId={savingId}
-              canSave={!collectionFull}
-              onExplore={onExplore}
-              onSave={onSave}
-            />
-          </section>
-
-          <section className="tool-section">
-            <h2>Coverage</h2>
-            <p className="section-intro">When your papers were published and what they cover</p>
-            <div className="coverage">
-              <div>
-                <h3>Years</h3>
-                <ul className="count-list">
-                  {audit.years.map((item) => (
-                    <li key={item.label}>
-                      <span className="tabular">{item.label}</span>
-                      <span className="tabular">{item.count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3>Topics</h3>
-                {audit.topics.length ? (
-                  <ul className="count-list">
-                    {audit.topics.slice(0, 8).map((item) => (
-                      <li key={item.label}>
-                        <span>{item.label}</span>
-                        <span className="tabular">{item.count}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="muted-text">OpenAlex has no topics for these papers</p>
-                )}
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
-    </div>
   );
 }
 
