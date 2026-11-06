@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   CLOUD_COLLECTION_LIMIT,
   LOCAL_COLLECTION_LIMIT,
+  addSavedPaper,
   createSavedPaper,
   loadAccountCache,
   loadAccountSettings,
@@ -241,7 +242,9 @@ export function useCollectionManager(graph: CitationGraphData | null) {
       const paperGraph =
         graph?.centerId === paper.id ? graph : await loadCitationGraph(paper.id);
       const entry = createSavedPaper(paper, paperGraph);
-      const next = [entry, ...collectionRef.current].slice(0, limit);
+      // Re-check after the network wait: a second save may have landed first.
+      if (collectionRef.current.some((item) => item.paper.id === paper.id)) return;
+      const next = addSavedPaper(collectionRef.current, entry, limit);
       applyCollection(next, activeAccount);
       if (activeAccount) scheduleCloudSave(activeAccount, entry);
       setNotice(

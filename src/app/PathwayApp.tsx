@@ -150,6 +150,8 @@ export function PathwayApp() {
     setNavOpen(false);
     resetSearch();
     pendingPaper.current = paper;
+    // Picking a paper again always loads it, so a failed load can be retried.
+    requestedId.current = null;
     navigate({ view: "paper", id: paper.id });
   };
 
@@ -296,6 +298,21 @@ export function PathwayApp() {
                   <TriangleAlert className="state-icon" size={22} strokeWidth={1.5} aria-hidden />
                   <h2>Paper unavailable</h2>
                   <p>{graphError}</p>
+                  {route.view === "paper" ? (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => {
+                        const id = route.id;
+                        requestedId.current = id;
+                        void selectPaper(
+                          pendingPaper.current?.id === id ? pendingPaper.current : stubPaper(id),
+                        );
+                      }}
+                    >
+                      Retry
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ) : (

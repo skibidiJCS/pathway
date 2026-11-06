@@ -24,7 +24,7 @@ export function useScreeningKeys(handlers: ScreeningKeys, enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined;
     const onKey = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
       if (isTyping(event.target)) return;
       const actions: Record<string, () => void> = {
         ArrowUp: latest.current.onUp,

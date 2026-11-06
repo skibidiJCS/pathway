@@ -19,8 +19,10 @@ export function useHashRoute() {
     if (window.location.hash === hash) {
       setRoute(next);
     } else {
-      // Assigning the hash adds a history entry and fires hashchange.
-      window.location.hash = hash;
+      // Assigning the hash adds a history entry and fires hashchange. From an
+      // open phone pane, replace its history step instead of stacking on it.
+      if (window.history.state?.pathwayPane) window.location.replace(hash);
+      else window.location.hash = hash;
     }
   }, []);
 

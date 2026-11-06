@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Paper } from "../../../lib/research-types";
 import type { ScreenMap } from "../../../lib/screening";
 import type { Suggestion } from "../../../lib/suggestions";
+import { loadCitationGraph } from "../../services/openalex-client";
 import { EmptyState, PageHeader } from "../library/PageHeader";
 import { Workspace } from "./Workspace";
 
@@ -37,6 +38,27 @@ export function SuggestedView({
   onStartExploring: () => void;
 }) {
   const [selected, setSelected] = useState<Paper | null>(null);
+  // Saved lists store citations without abstracts, so fetch the full record
+  // of a suggestion when it is opened, once.
+  const [details, setDetails] = useState<Record<string, Paper>>({});
+  const selectedId = selected?.id ?? null;
+  const needsDetails = Boolean(selected && !selected.abstract && !details[selected.id]);
+
+  useEffect(() => {
+    if (!selectedId || !needsDetails) return undefined;
+    let cancelled = false;
+    loadCitationGraph(selectedId)
+      .then((graph) => {
+        const full = graph.nodes.find((paper) => paper.id === graph.centerId);
+        if (!cancelled && full) {
+          setDetails((current) => ({ ...current, [selectedId]: full }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [needsDetails, selectedId]);
   const items = useMemo(
     () =>
       suggestions.map(({ paper, links }) => ({
@@ -81,7 +103,7 @@ export function SuggestedView({
       header={<h1 className="workspace-title">Suggested</h1>}
       items={items}
       givenOrderLabel="Most linked"
-      selected={selected}
+      selected={selected ? (details[selected.id] ?? selected) : null}
       fallback={null}
       screen={screen}
       savedIds={savedIds}

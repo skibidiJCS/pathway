@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Paper } from "../../../lib/research-types";
 import { nextUnscreened, type ScreenMap } from "../../../lib/screening";
 import { ReadingPane } from "./ReadingPane";
@@ -104,9 +105,30 @@ export function Workspace({
   const shownNote = items.find(({ paper }) => paper.id === shown?.id)?.note ?? "";
   const isListPaper = Boolean(selected && order.includes(selected.id));
 
+  // On phones the reading pane covers the list. Opening it adds a history
+  // step, so the system Back gesture closes the paper instead of leaving it.
+  const openPane = () => {
+    if (paneOpen) return;
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      window.history.pushState({ pathwayPane: true }, "");
+    }
+    setPaneOpen(true);
+  };
+
+  const closePane = () => {
+    if (window.history.state?.pathwayPane) window.history.back();
+    else setPaneOpen(false);
+  };
+
+  useEffect(() => {
+    const onPop = () => setPaneOpen(false);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   const select = (paper: Paper | null) => {
     onSelect(paper);
-    setPaneOpen(Boolean(paper));
+    if (paper) openPane();
   };
 
   const advanceFrom = (paperId: string) => {
@@ -122,7 +144,7 @@ export function Workspace({
   };
 
   const save = () => {
-    if (!shown || savedIds.has(shown.id) || collectionFull) return;
+    if (!shown || savedIds.has(shown.id) || savingId === shown.id || collectionFull) return;
     onSave(shown);
     if (isListPaper) advanceFrom(shown.id);
   };
@@ -200,6 +222,19 @@ export function Workspace({
               </label>
             </div>
           </div>
+          {fallback && !loading ? (
+            <button
+              type="button"
+              className="center-row"
+              onClick={() => {
+                onSelect(null);
+                openPane();
+              }}
+            >
+              <span className="center-row-title">{fallback.title}</span>
+              <ChevronRight size={18} strokeWidth={1.75} aria-hidden />
+            </button>
+          ) : null}
           <ScreeningList
             rows={rows}
             selectedId={selected?.id ?? null}
@@ -222,7 +257,7 @@ export function Workspace({
           onSkip={skip}
           onUnskip={() => selected && onUnskip(selected.id)}
           onFollow={follow}
-          onBack={() => setPaneOpen(false)}
+          onBack={closePane}
         />
       </div>
     </div>

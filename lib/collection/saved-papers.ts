@@ -65,3 +65,19 @@ export function mergeCollections(
   }
   return [...merged.values()].slice(0, limit);
 }
+
+/**
+ * Add a saved paper to the front of the collection. A paper that is already
+ * saved is left as it is, so two saves of the same paper (a double key
+ * press during the network wait) never produce two entries.
+ */
+export function addSavedPaper(
+  collection: SavedPaper[],
+  entry: SavedPaper,
+  limit: number,
+): SavedPaper[] {
+  if (collection.some((item) => item.paper.id === entry.paper.id)) {
+    return collection;
+  }
+  return [entry, ...collection].slice(0, limit);
+}

@@ -973,6 +973,11 @@ input.search-input:focus-visible {
   white-space: nowrap;
 }
 
+/* Phones only: the paper you followed, at the top of the list. */
+.center-row {
+  display: none;
+}
+
 .screen-list {
   flex: 1;
   min-height: 0;
@@ -1877,6 +1882,39 @@ input.search-input:focus-visible {
   }
 
   /* Phones: the list fills the screen, a paper opens over it. */
+  .center-row {
+    flex: 0 0 auto;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    text-align: left;
+  }
+
+  .center-row-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+  }
+
+  .center-row svg {
+    flex: 0 0 auto;
+    color: var(--text-3);
+  }
+
+  .text-tabs button,
+  .check-option {
+    min-height: 44px;
+  }
+
   .workspace-header {
     padding: 4px 16px;
   }

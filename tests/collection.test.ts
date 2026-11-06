@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   LOCAL_COLLECTION_LIMIT,
+  addSavedPaper,
   buildSavedRelationships,
   calculateAudit,
   compareSavedPapers,
@@ -243,4 +244,17 @@ test("folders and tags are normalized and capped", () => {
     ]),
     ["Methods", "Policy", "Law", "History", "Review", "Theory", "Data", "Extra"],
   );
+});
+
+test("addSavedPaper ignores a paper that is already saved", () => {
+  const first = saved(paper("A"));
+  const again = saved(paper("A"));
+  const collection = addSavedPaper([first], again, 10);
+  assert.equal(collection.length, 1);
+  assert.equal(collection[0], first);
+});
+
+test("addSavedPaper puts new papers first within the limit", () => {
+  const collection = addSavedPaper([saved(paper("A")), saved(paper("B"))], saved(paper("C")), 2);
+  assert.deepEqual(collection.map((entry) => entry.paper.id), ["C", "A"]);
 });

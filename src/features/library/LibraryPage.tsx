@@ -185,8 +185,8 @@ export function LibraryPage({
               </button>
             }
           >
-            Open a paper and press Save. Your list then unlocks Find gaps, Map
-            and Compare
+            Open a paper and press Save. With two or more saved, Suggested shows
+            what your list keeps pointing to
           </EmptyState>
         ) : (
           <>
