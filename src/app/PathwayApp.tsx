@@ -1,10 +1,10 @@
-import { Loader, Menu, TriangleAlert } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Menu, TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Paper } from "../../lib/research-types";
 import { HomeView } from "../features/explore/HomeView";
-import { PaperPreview } from "../features/explore/PaperPreview";
-import { PaperView } from "../features/explore/PaperView";
 import { SearchPanel } from "../features/explore/SearchPanel";
+import { PathTrail } from "../features/workspace/PathTrail";
+import { Workspace, type WorkspaceTab } from "../features/workspace/Workspace";
 import { LibraryPage, SyncPrompt } from "../features/library/LibraryPage";
 import {
   ComparePage,
@@ -18,6 +18,7 @@ import { GoogleSignInButton } from "./GoogleSignInButton";
 import { useCitationExplorer } from "./hooks/useCitationExplorer";
 import { useCollectionManager } from "./hooks/useCollectionManager";
 import { useHashRoute } from "./hooks/useHashRoute";
+import { useScreening } from "./hooks/useScreening";
 import { useInterfacePreferences } from "./hooks/useInterfacePreferences";
 import { usePaperSearch } from "./hooks/usePaperSearch";
 import { Sidebar } from "./Sidebar";
@@ -95,10 +96,22 @@ export function PathwayApp() {
   const collectionFull = collection.length >= collectionLimit;
   const center =
     graph?.nodes.find((paper) => paper.id === graph.centerId) ?? null;
-  const previewPaper =
+  const screening = useScreening();
+  const savedIds = useMemo(
+    () => new Set(collection.map((entry) => entry.paper.id)),
+    [collection],
+  );
+  const workspaceSelected =
     graph && graphState === "ready" && selectedPaper && selectedPaper.id !== graph.centerId
       ? selectedPaper
       : null;
+  const neighborhood = useMemo(
+    () =>
+      (graph?.nodes ?? [])
+        .filter((paper) => paper.id !== graph?.centerId)
+        .map((paper) => ({ paper, note: relationNote[paper.relation] })),
+    [graph],
+  );
 
   useEffect(() => {
     if (!compactLayout) setNavOpen(false);
@@ -170,10 +183,6 @@ export function PathwayApp() {
     setFolderFilter(folder);
     navigate({ view: "list" });
   };
-
-  const closePreview = useCallback(() => {
-    if (center) selectGraphPaper(center);
-  }, [center, selectGraphPaper]);
 
   const signInButton = (compact: boolean) =>
     account ? null : (
@@ -275,51 +284,53 @@ export function PathwayApp() {
               {search("bar")}
               {compactLayout ? null : signInButton(false)}
             </div>
-            <div className={`scroll-area${previewPaper ? " with-preview" : ""}`}>
-              {graphState === "loading" ? (
-                <div className="state" role="status">
-                  <Loader className="state-icon spinning" size={22} strokeWidth={1.5} aria-hidden />
-                  <h2>Loading citations</h2>
-                  {selectedPaper ? <p>{selectedPaper.title}</p> : null}
-                </div>
-              ) : graphState === "error" ? (
+            {graphState === "error" ? (
+              <div className="scroll-area">
                 <div className="state error" role="alert">
                   <TriangleAlert className="state-icon" size={22} strokeWidth={1.5} aria-hidden />
-                  <h2>Citations unavailable</h2>
+                  <h2>Paper unavailable</h2>
                   <p>{graphError}</p>
                 </div>
-              ) : graph ? (
-                <PaperView
-                  key={graph.centerId}
-                  graph={graph}
-                  visibleNodes={visibleNodes}
-                  selectedId={selectedPaper?.id ?? graph.centerId}
-                  history={explorationHistory}
-                  minYear={minYear}
-                  openAccessOnly={openAccessOnly}
-                  savedEntry={
-                    collection.find((entry) => entry.paper.id === graph.centerId) ?? null
+              </div>
+            ) : (
+              <Workspace
+                key={graph?.centerId ?? "loading"}
+                header={
+                  <PathTrail
+                    history={explorationHistory}
+                    currentId={graph?.centerId ?? selectedPaper?.id ?? ""}
+                    onOpen={(paper) =>
+                      paper.id === graph?.centerId && center
+                        ? selectGraphPaper(center)
+                        : follow(paper)
+                    }
+                  />
+                }
+                items={neighborhood}
+                tabs={relationTabs}
+                selected={workspaceSelected}
+                fallback={center ?? selectedPaper}
+                screen={screening.map}
+                savedIds={savedIds}
+                savingId={savingPaperId}
+                collectionFull={collectionFull}
+                loading={graphState === "loading"}
+                empty="No papers listed here"
+                onSelect={(paper) => {
+                  if (paper) {
+                    screening.seen(paper.id);
+                    selectGraphPaper(paper);
+                  } else if (center) {
+                    selectGraphPaper(center);
                   }
-                  saving={savingPaperId === graph.centerId}
-                  collectionFull={collectionFull}
-                  onSelect={selectGraphPaper}
-                  onFollow={follow}
-                  onSave={(paper) => void handleSave(paper)}
-                  onRemove={handleRemove}
-                  onMinYearChange={setMinYear}
-                  onOpenAccessChange={setOpenAccessOnly}
-                />
-              ) : null}
-            </div>
-            <PaperPreview
-              paper={previewPaper}
-              saved={collection.some((entry) => entry.paper.id === previewPaper?.id)}
-              saving={savingPaperId === previewPaper?.id}
-              collectionFull={collectionFull}
-              onClose={closePreview}
-              onFollow={follow}
-              onSave={(paper) => void handleSave(paper)}
-            />
+                }}
+                onSave={(paper) => void handleSave(paper)}
+                onRemove={handleRemove}
+                onSkip={screening.skip}
+                onUnskip={screening.unskip}
+                onFollow={follow}
+              />
+            )}
           </>
         ) : (
           <div className="scroll-area">
@@ -378,6 +389,27 @@ export function PathwayApp() {
     </div>
   );
 }
+
+const relationNote: Record<Paper["relation"], string> = {
+  selected: "",
+  reference: "Reference",
+  citing: "Citing",
+  both: "Both ways",
+};
+
+const relationTabs: WorkspaceTab[] = [
+  { key: "all", label: "All", filter: () => true },
+  {
+    key: "references",
+    label: "References",
+    filter: (paper) => paper.relation === "reference" || paper.relation === "both",
+  },
+  {
+    key: "citing",
+    label: "Citing papers",
+    filter: (paper) => paper.relation === "citing" || paper.relation === "both",
+  },
+];
 
 function stubPaper(id: string): Paper {
   return {
