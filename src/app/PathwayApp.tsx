@@ -12,17 +12,30 @@ import {
   MapPage,
   UpdatesPage,
 } from "../features/library/ToolPages";
+import type { Route } from "../../lib/routes";
 import type { LibraryView, View } from "./app-types";
 import { GoogleSignInButton } from "./GoogleSignInButton";
 import { useCitationExplorer } from "./hooks/useCitationExplorer";
 import { useCollectionManager } from "./hooks/useCollectionManager";
+import { useHashRoute } from "./hooks/useHashRoute";
 import { useInterfacePreferences } from "./hooks/useInterfacePreferences";
 import { usePaperSearch } from "./hooks/usePaperSearch";
 import { Sidebar } from "./Sidebar";
 import { Wordmark } from "./Wordmark";
 
 export function PathwayApp() {
-  const [view, setView] = useState<View>("explore");
+  const { route, navigate } = useHashRoute();
+  const view: View =
+    route.view === "home" || route.view === "paper"
+      ? "explore"
+      : route.view === "list"
+        ? "library"
+        : route.view === "suggested"
+          ? "gaps"
+          : route.view;
+  /** Full paper data for a follow, so the loading view can show its title. */
+  const pendingPaper = useRef<Paper | null>(null);
+  const requestedId = useRef<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [folderFilter, setFolderFilter] = useState("");
   const mainRef = useRef<HTMLElement | null>(null);
@@ -100,35 +113,62 @@ export function PathwayApp() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [navOpen]);
 
+  // The URL decides which paper is open; Back and links work through it.
+  useEffect(() => {
+    if (route.view !== "paper") return;
+    if (route.id === graph?.centerId || route.id === requestedId.current) return;
+    requestedId.current = route.id;
+    const known =
+      pendingPaper.current?.id === route.id
+        ? pendingPaper.current
+        : (explorationHistory.find((paper) => paper.id === route.id) ?? null);
+    void selectPaper(known ?? stubPaper(route.id));
+  }, [explorationHistory, graph?.centerId, route, selectPaper]);
+
   // Every page starts at its top.
   useEffect(() => {
     mainRef.current?.querySelector(".scroll-area")?.scrollTo({ top: 0 });
   }, [view, graph?.centerId]);
 
   const follow = (paper: Paper) => {
-    setView("explore");
     setNavOpen(false);
     resetSearch();
-    void selectPaper(paper);
+    pendingPaper.current = paper;
+    navigate({ view: "paper", id: paper.id });
   };
 
   const goHome = () => {
-    setView("explore");
     setNavOpen(false);
     resetSearch();
     resetExplorer();
+    requestedId.current = null;
+    navigate({ view: "home" });
+  };
+
+  /** Back to exploring: the open paper if there is one, otherwise home. */
+  const explore = () => {
+    setNavOpen(false);
+    navigate(graph ? { view: "paper", id: graph.centerId } : { view: "home" });
+  };
+
+  const pageRoute: Record<LibraryView, Route> = {
+    library: { view: "list" },
+    gaps: { view: "suggested" },
+    map: { view: "map" },
+    compare: { view: "compare" },
+    updates: { view: "updates" },
   };
 
   const openPage = (next: LibraryView) => {
-    setView(next);
     setNavOpen(false);
     if (next === "library") setFolderFilter("");
+    navigate(pageRoute[next]);
   };
 
   const openFolder = (folder: string) => {
-    setView("library");
     setNavOpen(false);
     setFolderFilter(folder);
+    navigate({ view: "list" });
   };
 
   const closePreview = useCallback(() => {
@@ -168,10 +208,10 @@ export function PathwayApp() {
     savingId: savingPaperId,
     onExplore: follow,
     onSave: (paper: Paper) => void handleSave(paper),
-    onStartExploring: () => setView("explore"),
+    onStartExploring: explore,
   };
 
-  const onHome = view === "explore" && graphState === "idle" && !graph;
+  const onHome = route.view === "home";
 
   return (
     <div className={`app-shell${navOpen ? " nav-open" : ""}`}>
@@ -186,10 +226,7 @@ export function PathwayApp() {
         compact={compactLayout}
         open={navOpen}
         onHome={goHome}
-        onExplore={() => {
-          setView("explore");
-          setNavOpen(false);
-        }}
+        onExplore={explore}
         onOpen={openPage}
         onFolder={openFolder}
         onSignOut={() => void handleSignOut()}
@@ -296,7 +333,7 @@ export function PathwayApp() {
                 onFolderFilterChange={setFolderFilter}
                 onMerge={() => void handleMerge()}
                 onDismissMerge={dismissMerge}
-                onStartExploring={() => setView("explore")}
+                onStartExploring={explore}
                 onExplore={follow}
                 onRemove={handleRemove}
                 onStatusChange={handleStatusChange}
@@ -314,7 +351,7 @@ export function PathwayApp() {
                     collection={collection}
                     theme={theme}
                     onExplore={follow}
-                    onStartExploring={() => setView("explore")}
+                    onStartExploring={explore}
                   />
                 ) : view === "compare" ? (
                   <ComparePage {...toolProps} />
@@ -340,4 +377,22 @@ export function PathwayApp() {
       ) : null}
     </div>
   );
+}
+
+function stubPaper(id: string): Paper {
+  return {
+    id,
+    title: "",
+    authors: [],
+    year: null,
+    source: null,
+    topics: [],
+    citationCount: 0,
+    abstract: null,
+    isOpenAccess: false,
+    openAccessStatus: null,
+    doi: null,
+    url: `https://openalex.org/${id}`,
+    relation: "selected",
+  };
 }
