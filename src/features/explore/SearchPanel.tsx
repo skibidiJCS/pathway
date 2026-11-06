@@ -1,5 +1,5 @@
 import { ArrowRight, Search, X } from "lucide-react";
-import { useEffect, useRef, type FormEventHandler } from "react";
+import { useEffect, useRef, useState, type FormEventHandler, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { Paper } from "../../../lib/research-types";
 import { SEARCH_RESULT_LIMIT } from "../../app/config";
 
@@ -63,6 +63,31 @@ export function SearchPanel({
 }: SearchPanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const kind = queryKind(query);
+  const [active, setActive] = useState(-1);
+
+  useEffect(() => setActive(-1), [results]);
+
+  useEffect(() => {
+    if (active < 0) return;
+    document
+      .getElementById(`search-result-${active}`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
+  /** Up and down move through the results, Enter opens the highlighted one. */
+  const onResultKeys = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (!results || results.length === 0) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      setActive((current) =>
+        Math.min(Math.max(current + step, 0), results.length - 1),
+      );
+    } else if (event.key === "Enter" && active >= 0) {
+      event.preventDefault();
+      onSelectPaper(results[active]);
+    }
+  };
 
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
@@ -103,6 +128,11 @@ export function SearchPanel({
             type="search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
+            onKeyDown={onResultKeys}
+            role="combobox"
+            aria-expanded={Boolean(results && results.length)}
+            aria-controls="search-results-list"
+            aria-activedescendant={active >= 0 ? `search-result-${active}` : undefined}
             placeholder={
               variant === "hero"
                 ? compactPlaceholder
@@ -170,15 +200,20 @@ export function SearchPanel({
               {searchError || "No papers matched. Try fewer words or a DOI"}
             </p>
           ) : (
-            <ul className="result-list">
+            <ul className="result-list" id="search-results-list" role="listbox">
               {results.map((paper, index) => (
                 <li
                   key={paper.id}
                   style={{ ["--i" as string]: Math.min(index, 9) }}
                 >
                   <button
-                    className="result-button"
+                    id={`search-result-${index}`}
+                    className={`result-button${index === active ? " active" : ""}`}
                     type="button"
+                    role="option"
+                    aria-selected={index === active}
+                    tabIndex={-1}
+                    onMouseEnter={() => setActive(index)}
                     onClick={() => onSelectPaper(paper)}
                   >
                     <span className="result-title">{paper.title}</span>

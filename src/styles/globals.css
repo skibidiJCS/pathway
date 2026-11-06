@@ -771,8 +771,13 @@ input.search-input:focus-visible {
   transition: background-color var(--fast) var(--ease);
 }
 
-.result-button:hover {
+.result-button:hover,
+.result-button.active {
   background: var(--hover);
+}
+
+.result-button.active {
+  box-shadow: inset 3px 0 0 var(--ink);
 }
 
 .result-title {
