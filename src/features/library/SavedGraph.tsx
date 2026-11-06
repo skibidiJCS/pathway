@@ -42,13 +42,14 @@ function relationshipLabel(
 function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
   const dark = theme === "dark";
   // Same ramp and ink as globals.css.
-  const paper = dark ? "#19191b" : "#ffffff";
-  const paperSelected = dark ? "#232325" : "#f0eeea";
-  const edge = dark ? "#5c5c62" : "#a8a39b";
-  const ink = dark ? "#ededed" : "#1c1a17";
-  const blue = dark ? "#a1a1a6" : "#57534c";
-  const border = dark ? "#3a3a3e" : "#d6d2cb";
-  const selected = dark ? "#e0907f" : "#8c2f24";
+  // Same ramp and colors as globals.css.
+  const paper = dark ? "#111a2e" : "#ffffff";
+  const paperSelected = dark ? "#1b2740" : "#e8eef6";
+  const edge = dark ? "#475569" : "#94a3b8";
+  const ink = dark ? "#e2e8f0" : "#0f172a";
+  const blue = dark ? "#94a3b8" : "#475569";
+  const border = dark ? "#334155" : "#cbd5e1";
+  const selected = dark ? "#f59e0b" : "#b45309";
   const transition =
     "background-color, border-color, border-width, color, height, line-color, opacity, source-arrow-color, target-arrow-color, width";
 
@@ -60,7 +61,7 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
         "border-color": border,
         "border-width": 1,
         color: ink,
-        "font-family": 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        "font-family": '"Atkinson Hyperlegible", system-ui, sans-serif',
         "font-size": 11,
         "font-weight": 400,
         height: 167,

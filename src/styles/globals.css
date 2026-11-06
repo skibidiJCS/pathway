@@ -6,58 +6,58 @@
  */
 
 :root {
-  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --fast: 150ms;
   --sidebar-width: 248px;
 
-  --bg: #f7f6f3;
-  --sidebar: #f0eee9;
+  --bg: #f8fafc;
+  --sidebar: #f1f5f9;
   --surface: #ffffff;
-  --raised: #e9e6e0;
-  --hover: #efede8;
-  --line: #e2dfd8;
-  --line-strong: #cfcbc3;
-  --text: #1c1a17;
-  --text-2: #57534c;
-  --text-3: #736e66;
-  --ink: #8c2f24;
+  --raised: #e2e8f0;
+  --hover: #eef2f7;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #64748b;
+  --ink: #1e3a5f;
   --ink-text: #ffffff;
-  --ink-soft: #f6ebe8;
-  --spark: #d9901f;
-  --spark-text: #1c1a17;
-  --negative: #b3261e;
+  --ink-soft: #e8eef6;
+  --spark: #b45309;
+  --spark-text: #ffffff;
+  --negative: #dc2626;
   --google-bg: #1f1f1f;
   --google-text: #ffffff;
-  --shadow-float: 0 8px 24px rgba(28, 25, 22, 0.1);
-  --scrim: rgba(28, 25, 22, 0.32);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23736e66' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+  --shadow-float: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --scrim: rgba(15, 23, 42, 0.4);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #141415;
-  --sidebar: #0f0f10;
-  --surface: #19191b;
-  --raised: #232325;
-  --hover: #1e1e20;
-  --line: #262628;
-  --line-strong: #343437;
-  --text: #ededed;
-  --text-2: #a1a1a6;
-  --text-3: #8a8a90;
-  --ink: #e0907f;
-  --ink-text: #141415;
-  --ink-soft: #2a1e1b;
-  --spark: #e8a93a;
-  --spark-text: #141415;
-  --negative: #e5484d;
+  --bg: #0b1220;
+  --sidebar: #080e1a;
+  --surface: #111a2e;
+  --raised: #1b2740;
+  --hover: #16213a;
+  --line: #1e293b;
+  --line-strong: #334155;
+  --text: #e2e8f0;
+  --text-2: #94a3b8;
+  --text-3: #8391a7;
+  --ink: #9db7da;
+  --ink-text: #0b1220;
+  --ink-soft: #1a2a44;
+  --spark: #f59e0b;
+  --spark-text: #0b1220;
+  --negative: #f87171;
   --google-bg: #ffffff;
   --google-text: #1f1f1f;
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.45);
   --scrim: rgba(0, 0, 0, 0.5);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238a8a90' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238391a7' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 
@@ -82,8 +82,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 16px;
+  line-height: 24px;
   -webkit-font-smoothing: antialiased;
   transition:
     background-color 300ms var(--ease),
@@ -139,8 +139,8 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 1px;
+  outline: 2px solid var(--spark);
+  outline-offset: 2px;
 }
 
 ::placeholder {
@@ -175,7 +175,7 @@ a {
 /* ---------- Controls ---------- */
 
 .button {
-  height: 32px;
+  height: 40px;
   padding: 0 12px;
   display: inline-flex;
   align-items: center;
@@ -227,6 +227,21 @@ a {
   filter: brightness(1.08);
 }
 
+.button.accent {
+  border-color: var(--spark);
+  background: var(--spark);
+  color: var(--spark-text);
+}
+
+.button.accent svg {
+  color: currentColor;
+}
+
+.button.accent:hover:not(:disabled) {
+  background: var(--spark);
+  filter: brightness(1.08);
+}
+
 .button.quiet {
   border-color: transparent;
   background: transparent;
@@ -240,8 +255,8 @@ a {
 }
 
 .icon-button {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
@@ -309,7 +324,7 @@ textarea {
 input[type="text"],
 input[type="search"],
 select {
-  height: 32px;
+  height: 40px;
   padding: 0 8px;
 }
 
@@ -329,7 +344,7 @@ select {
 
 select.compact-select,
 select.bare-select {
-  height: 28px;
+  height: 36px;
   border-color: transparent;
   background-color: transparent;
   color: var(--text-2);
@@ -390,7 +405,7 @@ input[type="checkbox"] {
   align-items: center;
   gap: 10px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 20px;
   white-space: nowrap;
 }
@@ -448,7 +463,7 @@ input[type="checkbox"] {
 
 .nav-item {
   width: 100%;
-  height: 32px;
+  height: 40px;
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
@@ -552,7 +567,7 @@ input[type="checkbox"] {
   background: var(--ink);
   color: var(--ink-text);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   transition:
     filter var(--fast) var(--ease),
     transform var(--fast) var(--ease);
@@ -794,7 +809,7 @@ input.search-input:focus-visible {
 .home-title {
   max-width: 20ch;
   font-size: 40px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 48px;
   text-wrap: balance;
 }
@@ -830,7 +845,7 @@ input.search-input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .home-continue svg {
@@ -852,7 +867,7 @@ input.search-input:focus-visible {
 
 .state h2 {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .state p {
@@ -993,7 +1008,7 @@ input.search-input:focus-visible {
 
 .trail li.current .trail-title {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .center-card {
@@ -1003,7 +1018,7 @@ input.search-input:focus-visible {
 .center-title {
   max-width: 34ch;
   font-size: 30px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 38px;
   text-wrap: balance;
 }
@@ -1086,7 +1101,7 @@ input.search-input:focus-visible {
   padding-right: 4px;
   color: var(--text);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .neighborhood {
@@ -1104,7 +1119,7 @@ input.search-input:focus-visible {
 
 .neighborhood-header h2 {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 26px;
 }
 
@@ -1165,7 +1180,7 @@ input.year-input {
 .timeline-key b {
   margin-left: 2px;
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .swatch {
@@ -1255,7 +1270,7 @@ input.year-input {
   background: var(--surface);
   color: var(--text);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -1304,7 +1319,7 @@ input.year-input {
 
 .list-column-header h2 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 24px;
 }
 
@@ -1453,7 +1468,7 @@ input.year-input {
 
 .preview-title {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 30px;
   text-wrap: pretty;
 }
@@ -1495,7 +1510,7 @@ input.year-input {
 .preview-abstract h3 {
   margin-bottom: 8px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .preview-abstract p {
@@ -1570,7 +1585,7 @@ input.year-input {
 }
 
 .sync-prompt-text strong {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .sync-prompt-text span {
@@ -1604,7 +1619,7 @@ input.year-input {
 
 .page-header h1 {
   font-size: 28px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 36px;
 }
 
@@ -1636,7 +1651,7 @@ input.year-input {
 
 .empty-state h2 {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 26px;
 }
 
@@ -1692,7 +1707,7 @@ input.year-input {
 
 .text-tabs button[aria-selected="true"] {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: inset 0 -2px 0 var(--ink);
 }
 
@@ -1714,7 +1729,7 @@ input.year-input {
 
 .collection-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 22px;
   transition: color var(--fast) var(--ease);
 }
@@ -1783,7 +1798,7 @@ input.year-input {
 
 .tool-section h2 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 24px;
 }
 
@@ -1845,7 +1860,7 @@ input.year-input {
 .coverage h3 {
   margin-bottom: 6px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .count-list li {
@@ -1956,7 +1971,7 @@ input.year-input {
 .saved-graph-explanation h3 {
   margin-bottom: 8px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 22px;
 }
 
@@ -2158,6 +2173,19 @@ input.year-input {
 }
 
 @media (max-width: 767px) {
+  .button,
+  .icon-button,
+  .nav-item,
+  input[type="text"],
+  input[type="search"],
+  select {
+    min-height: 44px;
+  }
+
+  .icon-button {
+    min-width: 44px;
+  }
+
   .topbar {
     padding: 8px 16px 10px;
   }
