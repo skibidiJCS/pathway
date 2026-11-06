@@ -1,9 +1,9 @@
 /**
- * The mark: one paper (the brass rule) with what came before it (the block
- * above, left) and what came after (the block below, right). The same idea
- * as the chart on every paper page. Mirrors public/icon.svg.
+ * P for Pathway, R for Research: an R is a P with one more stroke. The P is
+ * drawn in ink and the leg that turns it into an R in brass, so one glyph
+ * carries both letters. Mirrors public/icon.svg.
  */
-export function BrandMark({ size = 22 }: { size?: number }) {
+export function BrandMark({ size = 24 }: { size?: number }) {
   return (
     <svg
       className="brand-mark"
@@ -12,9 +12,21 @@ export function BrandMark({ size = 22 }: { size?: number }) {
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
-      <rect x="2" y="5" width="8" height="6" fill="var(--text)" />
-      <rect x="14" y="13" width="8" height="8" fill="var(--ink)" />
-      <rect x="11" y="2" width="2" height="20" fill="var(--spark)" />
+      <path
+        d="M6.5 22V3.5H13a5.25 5.25 0 0 1 0 10.5H6.5"
+        fill="none"
+        stroke="var(--ink)"
+        strokeWidth="3"
+        strokeLinecap="butt"
+        strokeLinejoin="miter"
+      />
+      <path
+        d="M12 14L18.5 22"
+        fill="none"
+        stroke="var(--spark)"
+        strokeWidth="3"
+        strokeLinecap="butt"
+      />
     </svg>
   );
 }
