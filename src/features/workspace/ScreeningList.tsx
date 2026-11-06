@@ -10,6 +10,13 @@ export interface ListRow {
   saved: boolean;
 }
 
+const statusLabel: Record<string, string> = {
+  unseen: "Unread",
+  seen: "Seen",
+  skipped: "Skipped",
+  saved: "Saved",
+};
+
 export function ScreeningList({
   rows,
   selectedId,
@@ -62,13 +69,14 @@ export function ScreeningList({
               aria-current={selected ? "true" : undefined}
             >
               <span className="screen-row-title">{row.paper.title}</span>
+              <span className="visually-hidden">{statusLabel[status]}</span>
               <span className="meta-row tabular">
                 <span>{row.paper.year ?? "Year unknown"}</span>
                 <span>{row.paper.citationCount.toLocaleString()} citations</span>
                 {row.note ? <span>{row.note}</span> : null}
               </span>
               {row.saved ? (
-                <Check className="screen-row-check" size={16} strokeWidth={2} aria-label="Saved" />
+                <Check className="screen-row-check" size={16} strokeWidth={2} aria-hidden />
               ) : null}
             </button>
           </li>

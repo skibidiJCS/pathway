@@ -22,6 +22,7 @@ export function SuggestedView({
   onUnskip,
   onFollow,
   onStartExploring,
+  keysEnabled,
 }: {
   suggestions: Suggestion[];
   savedCount: number;
@@ -36,6 +37,7 @@ export function SuggestedView({
   onUnskip: (paperId: string) => void;
   onFollow: (paper: Paper) => void;
   onStartExploring: () => void;
+  keysEnabled: boolean;
 }) {
   const [selected, setSelected] = useState<Paper | null>(null);
   // Saved lists store citations without abstracts, so fetch the full record
@@ -103,6 +105,8 @@ export function SuggestedView({
       header={<h1 className="workspace-title">Suggested</h1>}
       items={items}
       givenOrderLabel="Most linked"
+      settingsKey="pathway:list:suggested"
+      keysEnabled={keysEnabled}
       selected={selected ? (details[selected.id] ?? selected) : null}
       fallback={null}
       screen={screen}

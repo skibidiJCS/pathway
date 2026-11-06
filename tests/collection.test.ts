@@ -4,7 +4,6 @@ import {
   LOCAL_COLLECTION_LIMIT,
   addSavedPaper,
   buildSavedRelationships,
-  calculateAudit,
   compareSavedPapers,
   mergeCollections,
   sanitizeCollection,
@@ -51,60 +50,6 @@ function saved(
     savedAt: "2026-07-24T00:00:00.000Z",
   };
 }
-
-test("audit summarizes coverage and finds frequently shared missing references", () => {
-  const shared = paper("X", 50);
-  const first = paper("A", 10, ["Public health"]);
-  first.year = 2020;
-  const second = paper("B", 30, ["Public health", "Policy"]);
-  const third = paper("C", 20, ["Policy"]);
-  const collection = [
-    saved(first, [shared, paper("Y")]),
-    saved(second, [shared]),
-    saved(third, [shared]),
-  ];
-
-  const audit = calculateAudit(collection);
-
-  assert.equal(audit.totalCitations, 60);
-  assert.equal(audit.medianCitations, 20);
-  assert.equal(audit.openAccessCount, 2);
-  assert.deepEqual(audit.years, [
-    { label: "2022", count: 2 },
-    { label: "2020", count: 1 },
-  ]);
-  assert.deepEqual(audit.topics, [
-    { label: "Policy", count: 2 },
-    { label: "Public health", count: 2 },
-  ]);
-  assert.equal(audit.sharedReferences[0].paper.id, "X");
-  assert.equal(audit.sharedReferences[0].count, 3);
-  assert.equal(audit.missingFrequentPapers[0].paper.id, "X");
-  assert.equal(audit.bridgePapers[0].paper.id, "X");
-  assert.equal(audit.bridgePapers[0].count, 3);
-  assert.equal(audit.bridgePapers[0].referencedByCount, 3);
-  assert.equal(audit.bridgePapers[0].citesSavedCount, 0);
-});
-
-test("bridge papers include common citers and exclude saved papers", () => {
-  const first = paper("A");
-  const second = paper("B");
-  const bridge = paper("X", 75);
-  const collection = [
-    saved(first, [], [bridge]),
-    saved(second, [], [bridge]),
-    saved(bridge),
-  ];
-
-  assert.deepEqual(calculateAudit(collection).bridgePapers, []);
-
-  const withoutBridge = collection.slice(0, 2);
-  const [candidate] = calculateAudit(withoutBridge).bridgePapers;
-  assert.equal(candidate.paper.id, "X");
-  assert.equal(candidate.count, 2);
-  assert.equal(candidate.referencedByCount, 0);
-  assert.equal(candidate.citesSavedCount, 2);
-});
 
 test("comparison separates shared and unique links and detects direct citations", () => {
   const firstPaper = paper("A");

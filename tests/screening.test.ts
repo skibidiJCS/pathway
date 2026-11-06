@@ -5,6 +5,7 @@ import {
   markSeen,
   markSkipped,
   nextUnscreened,
+  skippedKey,
   storeScreening,
 } from "../lib/screening.ts";
 
@@ -61,4 +62,29 @@ test("storeScreening round-trips", () => {
   storeScreening({ a: "seen" });
   assert.equal(data["pathway:screening:v1"], JSON.stringify({ a: "seen" }));
   assert.deepEqual(loadScreening(), { a: "seen" });
+});
+
+test("loadScreening returns {} when storage throws", () => {
+  (globalThis as { localStorage?: unknown }).localStorage = {
+    getItem: () => {
+      throw new Error("blocked");
+    },
+    setItem: () => {
+      throw new Error("blocked");
+    },
+  };
+  assert.deepEqual(loadScreening(), {});
+  assert.doesNotThrow(() => storeScreening({ a: "seen" }));
+});
+
+test("loadScreening returns {} when storage is missing", () => {
+  delete (globalThis as { localStorage?: unknown }).localStorage;
+  assert.deepEqual(loadScreening(), {});
+});
+
+test("skippedKey is stable across seen changes", () => {
+  const base = { a: "skipped", b: "seen" } as const;
+  assert.equal(skippedKey(base), skippedKey({ ...base, c: "seen" }));
+  assert.notEqual(skippedKey(base), skippedKey({ ...base, c: "skipped" }));
+  assert.equal(skippedKey({ b: "skipped", a: "skipped" }), skippedKey({ a: "skipped", b: "skipped" }));
 });

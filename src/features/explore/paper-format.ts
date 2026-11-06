@@ -27,9 +27,6 @@ export function authorsText(authors: string[], max = 6): string {
   return `${authors.slice(0, max).join(", ")} and ${authors.length - max} more`;
 }
 
-export function doiText(doi: string): string {
-  return doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, "");
-}
 
 export function citationsText(count: number): string {
   return `${count.toLocaleString()} citation${count === 1 ? "" : "s"}`;

@@ -2,7 +2,7 @@
 export type ScreenState = "seen" | "skipped";
 export type ScreenMap = Record<string, ScreenState>;
 
-const SCREENING_KEY = "pathway:screening:v1";
+export const SCREENING_KEY = "pathway:screening:v1";
 
 export function loadScreening(): ScreenMap {
   try {
@@ -48,4 +48,15 @@ export function nextUnscreened(
     if (!map[id] && !savedIds.has(id)) return id;
   }
   return null;
+}
+
+/**
+ * A stable key for the skipped set: it changes only when a paper is skipped
+ * or unskipped, not when one is merely seen.
+ */
+export function skippedKey(map: ScreenMap): string {
+  return Object.keys(map)
+    .filter((id) => map[id] === "skipped")
+    .sort()
+    .join("\n");
 }

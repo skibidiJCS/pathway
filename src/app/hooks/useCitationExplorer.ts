@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   loadExplorationHistory,
   storeExplorationHistory,
@@ -22,24 +22,10 @@ export function useCitationExplorer() {
   const [graphState, setGraphState] = useState<LoadState>("idle");
   const [graphError, setGraphError] = useState("");
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
-  const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const [minYear, setMinYear] = useState("");
-  const [openAccessOnly, setOpenAccessOnly] = useState(false);
   const [explorationHistory, setExplorationHistory] = useState<Paper[]>(() =>
     loadExplorationHistory(),
   );
   const graphRequestId = useRef(0);
-
-  const visibleNodes = useMemo(() => {
-    if (!graph) return [];
-    const year = Number(minYear);
-    return graph.nodes.filter((paper) => {
-      if (paper.id === graph.centerId) return true;
-      if (minYear && (paper.year === null || paper.year < year)) return false;
-      if (openAccessOnly && !paper.isOpenAccess) return false;
-      return true;
-    });
-  }, [graph, minYear, openAccessOnly]);
 
   const selectPaper = async (paper: Paper) => {
     releaseMobileFocus();
@@ -48,9 +34,6 @@ export function useCitationExplorer() {
     setGraphError("");
     setGraph(null);
     setSelectedPaper(paper);
-    setDetailsExpanded(false);
-    setMinYear("");
-    setOpenAccessOnly(false);
 
     try {
       const nextGraph = await loadCitationGraph(paper.id);
@@ -87,9 +70,6 @@ export function useCitationExplorer() {
     setGraphState("idle");
     setGraphError("");
     setSelectedPaper(null);
-    setDetailsExpanded(false);
-    setMinYear("");
-    setOpenAccessOnly(false);
   };
 
   return {
@@ -97,14 +77,7 @@ export function useCitationExplorer() {
     graphState,
     graphError,
     selectedPaper,
-    detailsExpanded,
-    minYear,
-    openAccessOnly,
     explorationHistory,
-    visibleNodes,
-    setDetailsExpanded,
-    setMinYear,
-    setOpenAccessOnly,
     selectPaper,
     selectGraphPaper,
     resetExplorer,

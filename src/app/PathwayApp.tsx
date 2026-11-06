@@ -55,12 +55,7 @@ export function PathwayApp() {
     graphState,
     graphError,
     selectedPaper,
-    minYear,
-    openAccessOnly,
     explorationHistory,
-    visibleNodes,
-    setMinYear,
-    setOpenAccessOnly,
     selectPaper,
     selectGraphPaper,
     resetExplorer,
@@ -331,6 +326,8 @@ export function PathwayApp() {
                 }
                 items={neighborhood}
                 tabs={relationTabs}
+                settingsKey="pathway:list:paper"
+                keysEnabled={!navOpen && !results}
                 selected={workspaceSelected}
                 fallback={center ?? selectedPaper}
                 screen={screening.map}
@@ -370,6 +367,7 @@ export function PathwayApp() {
             onUnskip={screening.unskip}
             onFollow={follow}
             onStartExploring={explore}
+            keysEnabled={!navOpen}
           />
         ) : (
           <div className="scroll-area">

@@ -3,6 +3,8 @@ import {
   loadScreening,
   markSeen,
   markSkipped,
+  SCREENING_KEY,
+  skippedKey,
   storeScreening,
   type ScreenMap,
 } from "../../../lib/screening";
@@ -23,15 +25,19 @@ export function useScreening() {
       }),
     [],
   );
-  const skipped = useMemo(
-    () =>
-      new Set(
-        Object.entries(map)
-          .filter(([, state]) => state === "skipped")
-          .map(([id]) => id),
-      ),
-    [map],
-  );
+  // Rebuilt only when the skipped list changes, so seeing a paper does not
+  // make every consumer of the skipped set recompute.
+  const key = skippedKey(map);
+  const skipped = useMemo(() => new Set(key ? key.split("\n") : []), [key]);
+
+  // Keep two open tabs in step: adopt what another tab just wrote.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === SCREENING_KEY) setMap(loadScreening());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   return { map, skipped, seen, skip, unskip };
 }

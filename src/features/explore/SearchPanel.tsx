@@ -76,6 +76,9 @@ export function SearchPanel({
 
   /** Up and down move through the results, Enter opens the highlighted one. */
   const onResultKeys = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    // Enter during IME composition (Chinese, Japanese, Korean) confirms the
+    // characters; it must not open a result.
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (!results || results.length === 0) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();

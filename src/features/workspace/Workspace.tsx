@@ -5,6 +5,7 @@ import { nextUnscreened, type ScreenMap } from "../../../lib/screening";
 import { ReadingPane } from "./ReadingPane";
 import { ScreeningList, type ListRow } from "./ScreeningList";
 import { useScreeningKeys } from "./useScreeningKeys";
+import { useSessionState } from "./useSessionState";
 
 export interface WorkspaceItem {
   paper: Paper;
@@ -52,6 +53,8 @@ export function Workspace({
   onSkip,
   onUnskip,
   onFollow,
+  settingsKey,
+  keysEnabled = true,
 }: {
   header?: ReactNode;
   items: WorkspaceItem[];
@@ -73,11 +76,18 @@ export function Workspace({
   onSkip: (paperId: string) => void;
   onUnskip: (paperId: string) => void;
   onFollow: (paper: Paper) => void;
+  /** Where list settings are kept for the session, per kind of list. */
+  settingsKey: string;
+  /** Off while something covers the workspace (menu, search results). */
+  keysEnabled?: boolean;
 }) {
-  const [tab, setTab] = useState(tabs?.[0]?.key ?? "");
-  const [sort, setSort] = useState<Sort>(givenOrderLabel ? "given" : "most-cited");
-  const [hideSkipped, setHideSkipped] = useState(false);
-  const [openOnly, setOpenOnly] = useState(false);
+  const [tab, setTab] = useSessionState(`${settingsKey}:tab`, tabs?.[0]?.key ?? "");
+  const [sort, setSort] = useSessionState<Sort>(
+    `${settingsKey}:sort`,
+    givenOrderLabel ? "given" : "most-cited",
+  );
+  const [hideSkipped, setHideSkipped] = useSessionState(`${settingsKey}:hide`, false);
+  const [openOnly, setOpenOnly] = useSessionState(`${settingsKey}:open`, false);
   const [paneOpen, setPaneOpen] = useState(false);
 
   const activeTab = tabs?.find((entry) => entry.key === tab) ?? tabs?.[0];
@@ -103,7 +113,9 @@ export function Workspace({
   const order = visible.map(({ paper }) => paper.id);
   const shown = selected ?? fallback;
   const shownNote = items.find(({ paper }) => paper.id === shown?.id)?.note ?? "";
-  const isListPaper = Boolean(selected && order.includes(selected.id));
+  const isListPaper = Boolean(
+    selected && items.some(({ paper }) => paper.id === selected.id),
+  );
 
   // On phones the reading pane covers the list. Opening it adds a history
   // step, so the system Back gesture closes the paper instead of leaving it.
@@ -159,13 +171,16 @@ export function Workspace({
     if (selected && isListPaper) onFollow(selected);
   };
 
-  useScreeningKeys({
+  useScreeningKeys(
+    {
     onUp: () => move(-1),
     onDown: () => move(1),
     onSave: save,
     onSkip: skip,
     onFollow: follow,
-  });
+    },
+    keysEnabled,
+  );
 
   const count = (filter?: (paper: Paper) => boolean) =>
     filter ? items.filter(({ paper }) => filter(paper)).length : items.length;
