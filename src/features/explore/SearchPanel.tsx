@@ -1,27 +1,20 @@
 import { ArrowRight, Search, X } from "lucide-react";
-import { useEffect, useRef, type FormEventHandler, type ReactNode } from "react";
-import type {
-  CitationGraphData,
-  Paper,
-} from "../../../lib/research-types";
+import { useEffect, useRef, type FormEventHandler } from "react";
+import type { Paper } from "../../../lib/research-types";
 import { SEARCH_RESULT_LIMIT } from "../../app/config";
 
 interface SearchPanelProps {
+  variant: "hero" | "bar";
   query: string;
   searching: boolean;
   results: Paper[] | null;
   matchedAuthor: string;
   searchError: string;
-  graph: CitationGraphData | null;
-  minYear: string;
-  openAccessOnly: boolean;
   compactPlaceholder: boolean;
-  accessory?: ReactNode;
+  autoFocus?: boolean;
   onSearch: FormEventHandler<HTMLFormElement>;
   onQueryChange: (query: string) => void;
   onDismissResults: () => void;
-  onMinYearChange: (year: string) => void;
-  onOpenAccessChange: (enabled: boolean) => void;
   onSelectPaper: (paper: Paper) => void;
 }
 
@@ -55,21 +48,17 @@ function resultAuthors(paper: Paper): string {
 }
 
 export function SearchPanel({
+  variant,
   query,
   searching,
   results,
   matchedAuthor,
   searchError,
-  graph,
-  minYear,
-  openAccessOnly,
   compactPlaceholder,
-  accessory,
+  autoFocus = false,
   onSearch,
   onQueryChange,
   onDismissResults,
-  onMinYearChange,
-  onOpenAccessChange,
   onSelectPaper,
 }: SearchPanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -94,96 +83,60 @@ export function SearchPanel({
   }, []);
 
   return (
-    <section
-      className="search-region"
-      aria-label="Paper search"
+    <div
+      className={`search-panel ${variant}`}
       onKeyDown={(event) => {
         if (event.key === "Escape" && results) onDismissResults();
       }}
     >
-      <div className="search-bar">
-        <form className="search-row" onSubmit={onSearch} role="search">
-          <label className="search-field">
-            <Search className="search-icon" size={18} strokeWidth={1.5} aria-hidden />
-            <input
-              ref={inputRef}
-              className="search-input"
-              type="search"
-              value={query}
-              onChange={(event) => onQueryChange(event.target.value)}
-              placeholder={
-                compactPlaceholder
-                  ? "Title, DOI or author"
-                  : "Search by title, DOI, keyword or author"
-              }
-              aria-label="Paper title, DOI, keyword or full author name"
-              aria-describedby="search-kind"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <span id="search-kind" className="search-kind" aria-live="polite">
-              {kind}
-            </span>
-            {query ? (
-              <button
-                className="input-clear"
-                type="button"
-                onClick={() => {
-                  onQueryChange("");
-                  inputRef.current?.focus();
-                }}
-                aria-label="Clear search"
-              >
-                <X size={16} strokeWidth={1.5} aria-hidden />
-              </button>
-            ) : null}
-          </label>
-          <button
-            className="search-submit"
-            type="submit"
-            disabled={searching}
-            aria-label="Search"
-          >
-            {searching ? (
-              "Searching…"
-            ) : (
-              <ArrowRight size={18} strokeWidth={1.75} aria-hidden />
-            )}
-          </button>
-        </form>
-
-        {graph ? (
-          <div className="filters" aria-label="Citation filters">
-            <label className="year-field">
-              <span>From</span>
-              <input
-                className="year-input tabular"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={minYear}
-                onChange={(event) =>
-                  onMinYearChange(
-                    event.target.value.replace(/\D/g, "").slice(0, 4),
-                  )
-                }
-                placeholder="year"
-                aria-label="Show papers published from this year"
-              />
-            </label>
-            <label className="oa-filter">
-              <input
-                type="checkbox"
-                checked={openAccessOnly}
-                onChange={(event) => onOpenAccessChange(event.target.checked)}
-              />
-              <span>Open access only</span>
-            </label>
-          </div>
-        ) : null}
-
-        {accessory ? <div className="search-accessory">{accessory}</div> : null}
-      </div>
+      <form className="search-row" onSubmit={onSearch} role="search">
+        <label className="search-field">
+          <Search
+            className="search-icon"
+            size={variant === "hero" ? 22 : 18}
+            strokeWidth={1.5}
+            aria-hidden
+          />
+          <input
+            ref={inputRef}
+            className="search-input"
+            type="search"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder={
+              variant === "hero"
+                ? compactPlaceholder
+                  ? "A title, DOI or author"
+                  : "Paste a paper title, a DOI or an author’s name"
+                : "Search another paper"
+            }
+            aria-label="Paper title, DOI, keyword or full author name"
+            aria-describedby="search-kind"
+            autoComplete="off"
+            spellCheck={false}
+            autoFocus={autoFocus}
+          />
+          <span id="search-kind" className="search-kind" aria-live="polite">
+            {searching ? "Searching…" : kind}
+          </span>
+          {query ? (
+            <button
+              className="input-clear"
+              type="button"
+              onClick={() => {
+                onQueryChange("");
+                inputRef.current?.focus();
+              }}
+              aria-label="Clear search"
+            >
+              <X size={16} strokeWidth={1.5} aria-hidden />
+            </button>
+          ) : null}
+        </label>
+        <button className="search-submit" type="submit" aria-label="Search">
+          <ArrowRight size={variant === "hero" ? 22 : 18} strokeWidth={1.75} aria-hidden />
+        </button>
+      </form>
 
       {searchError && !results ? (
         <p className="search-error" role="alert">
@@ -196,12 +149,12 @@ export function SearchPanel({
           <div className="results-header">
             <span>
               {matchedAuthor && results.length > 0
-                ? `Papers by ${matchedAuthor}`
+                ? `Papers by ${matchedAuthor}. Pick one to start from`
                 : results.length === 0
                   ? "No matches"
                   : results.length >= SEARCH_RESULT_LIMIT
-                    ? `Top ${results.length} results`
-                    : `${results.length} result${results.length === 1 ? "" : "s"}`}
+                    ? `Top ${results.length} matches. Pick one to start from`
+                    : `${results.length} match${results.length === 1 ? "" : "es"}. Pick one to start from`}
             </span>
             <button
               type="button"
@@ -214,7 +167,7 @@ export function SearchPanel({
           </div>
           {results.length === 0 ? (
             <p className="result-empty">
-              {searchError || "No papers matched that search"}
+              {searchError || "No papers matched. Try fewer words or a DOI"}
             </p>
           ) : (
             <ul className="result-list">
@@ -240,6 +193,6 @@ export function SearchPanel({
           )}
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }

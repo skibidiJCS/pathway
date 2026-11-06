@@ -1,10 +1,18 @@
-import { Menu } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader, Menu, TriangleAlert } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Paper } from "../../lib/research-types";
-import { ExploreWorkspace } from "../features/explore/ExploreWorkspace";
+import { HomeView } from "../features/explore/HomeView";
+import { PaperPreview } from "../features/explore/PaperPreview";
+import { PaperView } from "../features/explore/PaperView";
 import { SearchPanel } from "../features/explore/SearchPanel";
-import { ReviewPage } from "../features/review/ReviewPage";
-import type { ReviewFocus, ReviewSection, View } from "./app-types";
+import { LibraryPage, SyncPrompt } from "../features/library/LibraryPage";
+import {
+  ComparePage,
+  GapsPage,
+  MapPage,
+  UpdatesPage,
+} from "../features/library/ToolPages";
+import type { LibraryView, View } from "./app-types";
 import { GoogleSignInButton } from "./GoogleSignInButton";
 import { useCitationExplorer } from "./hooks/useCitationExplorer";
 import { useCollectionManager } from "./hooks/useCollectionManager";
@@ -16,11 +24,8 @@ import { Wordmark } from "./Wordmark";
 export function PathwayApp() {
   const [view, setView] = useState<View>("explore");
   const [navOpen, setNavOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<ReviewSection | null>(
-    null,
-  );
-  const [reviewFocus, setReviewFocus] = useState<ReviewFocus | null>(null);
   const [folderFilter, setFolderFilter] = useState("");
+  const mainRef = useRef<HTMLElement | null>(null);
   const {
     query,
     searching,
@@ -37,12 +42,10 @@ export function PathwayApp() {
     graphState,
     graphError,
     selectedPaper,
-    detailsExpanded,
     minYear,
     openAccessOnly,
     explorationHistory,
     visibleNodes,
-    setDetailsExpanded,
     setMinYear,
     setOpenAccessOnly,
     selectPaper,
@@ -76,8 +79,13 @@ export function PathwayApp() {
     dismissMerge,
     checkUpdates: handleCheckUpdates,
   } = useCollectionManager(graph);
-  const selectedSavedEntry =
-    collection.find((entry) => entry.paper.id === selectedPaper?.id) ?? null;
+  const collectionFull = collection.length >= collectionLimit;
+  const center =
+    graph?.nodes.find((paper) => paper.id === graph.centerId) ?? null;
+  const previewPaper =
+    graph && graphState === "ready" && selectedPaper && selectedPaper.id !== graph.centerId
+      ? selectedPaper
+      : null;
 
   useEffect(() => {
     if (!compactLayout) setNavOpen(false);
@@ -92,99 +100,104 @@ export function PathwayApp() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [navOpen]);
 
-  const selectSearchResult = (paper: Paper) => {
+  // Every page starts at its top.
+  useEffect(() => {
+    mainRef.current?.querySelector(".scroll-area")?.scrollTo({ top: 0 });
+  }, [view, graph?.centerId]);
+
+  const follow = (paper: Paper) => {
     setView("explore");
     setNavOpen(false);
-    dismissResults();
+    resetSearch();
     void selectPaper(paper);
   };
 
-  const resetApp = () => {
+  const goHome = () => {
     setView("explore");
     setNavOpen(false);
     resetSearch();
     resetExplorer();
   };
 
-  const openSaved = () => {
-    setView("review");
+  const openPage = (next: LibraryView) => {
+    setView(next);
     setNavOpen(false);
-    setActiveSection(null);
-    setFolderFilter("");
-    setReviewFocus((current) => ({
-      section: "collection",
-      request: (current?.request ?? 0) + 1,
-    }));
-  };
-
-  const openSection = (section: ReviewSection) => {
-    setView("review");
-    setNavOpen(false);
-    setActiveSection(section);
-    setReviewFocus((current) => ({
-      section,
-      request: (current?.request ?? 0) + 1,
-    }));
+    if (next === "library") setFolderFilter("");
   };
 
   const openFolder = (folder: string) => {
-    setView("review");
+    setView("library");
     setNavOpen(false);
-    setActiveSection(null);
     setFolderFilter(folder);
-    setReviewFocus((current) => ({
-      section: "collection",
-      request: (current?.request ?? 0) + 1,
-    }));
   };
 
-  const signInButton = (compact: boolean) => (
-    <GoogleSignInButton
-      onSignIn={() => void handleSignIn()}
-      busy={authBusy}
-      ready={authReady}
-      compact={compact}
+  const closePreview = useCallback(() => {
+    if (center) selectGraphPaper(center);
+  }, [center, selectGraphPaper]);
+
+  const signInButton = (compact: boolean) =>
+    account ? null : (
+      <GoogleSignInButton
+        onSignIn={() => void handleSignIn()}
+        busy={authBusy}
+        ready={authReady}
+        compact={compact}
+      />
+    );
+
+  const search = (variant: "hero" | "bar") => (
+    <SearchPanel
+      variant={variant}
+      query={query}
+      searching={searching}
+      results={results}
+      matchedAuthor={matchedAuthor}
+      searchError={searchError}
+      compactPlaceholder={compactSearchPlaceholder}
+      autoFocus={variant === "hero" && !compactLayout}
+      onSearch={handleSearch}
+      onQueryChange={setQuery}
+      onDismissResults={dismissResults}
+      onSelectPaper={follow}
     />
   );
 
-  const shellClasses = [
-    "app-shell",
-    navOpen ? "nav-open" : "",
-    detailsExpanded && selectedPaper ? "mobile-details-open" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const toolProps = {
+    collection,
+    collectionFull,
+    savingId: savingPaperId,
+    onExplore: follow,
+    onSave: (paper: Paper) => void handleSave(paper),
+    onStartExploring: () => setView("explore"),
+  };
+
+  const onHome = view === "explore" && graphState === "idle" && !graph;
 
   return (
-    <div className={shellClasses}>
+    <div className={`app-shell${navOpen ? " nav-open" : ""}`}>
       <Sidebar
         view={view}
-        activeSection={activeSection}
         activeFolder={folderFilter}
         collection={collection}
         updatesCount={updates.length}
-        history={explorationHistory}
-        currentPaperId={graph?.centerId ?? null}
         account={account}
         syncState={syncState}
         theme={theme}
         compact={compactLayout}
         open={navOpen}
-        onHome={resetApp}
+        onHome={goHome}
         onExplore={() => {
           setView("explore");
           setNavOpen(false);
         }}
-        onSaved={openSaved}
-        onSection={openSection}
+        onOpen={openPage}
         onFolder={openFolder}
-        onTrailSelect={selectSearchResult}
         onSignOut={() => void handleSignOut()}
         onToggleTheme={toggleTheme}
         onClose={() => setNavOpen(false)}
       />
 
-      <main className="app-main">
+      <main className="app-main" ref={mainRef}>
         <header className="mobile-bar">
           <button
             type="button"
@@ -196,86 +209,126 @@ export function PathwayApp() {
           >
             <Menu size={18} strokeWidth={1.5} aria-hidden />
           </button>
-          <button className="brand" type="button" onClick={resetApp}>
+          <button className="brand" type="button" onClick={goHome}>
             <Wordmark />
           </button>
-          {account || view === "review" ? (
+          {signInButton(true) ?? (
             <button
               type="button"
-              className={`mobile-saved${view === "review" ? " active" : ""}`}
-              onClick={view === "review" ? () => setView("explore") : openSaved}
+              className={`mobile-saved${view === "library" ? " active" : ""}`}
+              onClick={() => openPage("library")}
             >
-              {view === "review" ? "Explore" : `Saved ${collection.length}`}
+              Reading list {collection.length}
             </button>
-          ) : (
-            signInButton(true)
           )}
         </header>
 
-        {view === "review" ? (
-          <ReviewPage
-            collection={collection}
-            limit={collectionLimit}
-            signedIn={Boolean(account)}
-            signInButton={account ? null : signInButton(false)}
-            mergeCandidate={mergeCandidate}
-            theme={theme}
-            updates={updates}
-            checkingUpdates={checkingUpdates}
-            lastCheckedAt={settings.lastCheckedAt}
-            focus={reviewFocus}
-            folderFilter={folderFilter}
-            onFolderFilterChange={setFolderFilter}
-            onSignIn={() => void handleSignIn()}
-            onMerge={() => void handleMerge()}
-            onDismissMerge={dismissMerge}
-            onExplore={(paper) => void selectSearchResult(paper)}
-            onRemove={handleRemove}
-            onStatusChange={handleStatusChange}
-            onNoteChange={handleNoteChange}
-            onFolderChange={handleFolderChange}
-            onTagsChange={handleTagsChange}
-            onCheckUpdates={() => void handleCheckUpdates()}
-          />
-        ) : (
-          <div className="explore-view">
-            <SearchPanel
-              query={query}
-              searching={searching}
-              results={results}
-              matchedAuthor={matchedAuthor}
-              searchError={searchError}
-              graph={graph}
-              minYear={minYear}
-              openAccessOnly={openAccessOnly}
-              compactPlaceholder={compactSearchPlaceholder}
-              onSearch={handleSearch}
-              onQueryChange={setQuery}
-              onDismissResults={dismissResults}
-              onMinYearChange={setMinYear}
-              onOpenAccessChange={setOpenAccessOnly}
-              onSelectPaper={(paper) => void selectSearchResult(paper)}
-              accessory={account ? null : signInButton(false)}
+        {onHome ? (
+          <div className="scroll-area">
+            <HomeView
+              search={search("hero")}
+              accessory={compactLayout ? null : signInButton(false)}
+              lastPaper={explorationHistory[0] ?? null}
+              onExample={(example) => setQuery(example)}
+              onContinue={follow}
             />
-
-            <ExploreWorkspace
-              graph={graph}
-              graphState={graphState}
-              graphError={graphError}
-              visibleNodes={visibleNodes}
-              selectedPaper={selectedPaper}
-              selectedSavedEntry={selectedSavedEntry}
-              detailsExpanded={detailsExpanded}
-              collectionFull={collection.length >= collectionLimit}
-              saving={savingPaperId === selectedPaper?.id}
-              onSelectPaper={selectGraphPaper}
-              onToggleDetails={() => setDetailsExpanded((value) => !value)}
-              onExplorePaper={selectSearchResult}
+          </div>
+        ) : view === "explore" ? (
+          <>
+            <div className="topbar">
+              {search("bar")}
+              {compactLayout ? null : signInButton(false)}
+            </div>
+            <div className={`scroll-area${previewPaper ? " with-preview" : ""}`}>
+              {graphState === "loading" ? (
+                <div className="state" role="status">
+                  <Loader className="state-icon spinning" size={22} strokeWidth={1.5} aria-hidden />
+                  <h2>Loading citations</h2>
+                  {selectedPaper ? <p>{selectedPaper.title}</p> : null}
+                </div>
+              ) : graphState === "error" ? (
+                <div className="state error" role="alert">
+                  <TriangleAlert className="state-icon" size={22} strokeWidth={1.5} aria-hidden />
+                  <h2>Citations unavailable</h2>
+                  <p>{graphError}</p>
+                </div>
+              ) : graph ? (
+                <PaperView
+                  graph={graph}
+                  visibleNodes={visibleNodes}
+                  selectedId={selectedPaper?.id ?? graph.centerId}
+                  history={explorationHistory}
+                  minYear={minYear}
+                  openAccessOnly={openAccessOnly}
+                  savedEntry={
+                    collection.find((entry) => entry.paper.id === graph.centerId) ?? null
+                  }
+                  saving={savingPaperId === graph.centerId}
+                  collectionFull={collectionFull}
+                  onSelect={selectGraphPaper}
+                  onFollow={follow}
+                  onSave={(paper) => void handleSave(paper)}
+                  onRemove={handleRemove}
+                  onMinYearChange={setMinYear}
+                  onOpenAccessChange={setOpenAccessOnly}
+                />
+              ) : null}
+            </div>
+            <PaperPreview
+              paper={previewPaper}
+              saved={collection.some((entry) => entry.paper.id === previewPaper?.id)}
+              saving={savingPaperId === previewPaper?.id}
+              collectionFull={collectionFull}
+              onClose={closePreview}
+              onFollow={follow}
               onSave={(paper) => void handleSave(paper)}
-              onRemove={handleRemove}
-              onStatusChange={handleStatusChange}
-              onNoteChange={handleNoteChange}
             />
+          </>
+        ) : (
+          <div className="scroll-area">
+            {view === "library" ? (
+              <LibraryPage
+                collection={collection}
+                limit={collectionLimit}
+                signInButton={signInButton(false)}
+                mergeCandidate={mergeCandidate}
+                folderFilter={folderFilter}
+                onFolderFilterChange={setFolderFilter}
+                onMerge={() => void handleMerge()}
+                onDismissMerge={dismissMerge}
+                onStartExploring={() => setView("explore")}
+                onExplore={follow}
+                onRemove={handleRemove}
+                onStatusChange={handleStatusChange}
+                onNoteChange={handleNoteChange}
+                onFolderChange={handleFolderChange}
+                onTagsChange={handleTagsChange}
+              />
+            ) : (
+              <div className="page">
+                <SyncPrompt signInButton={signInButton(false)} />
+                {view === "gaps" ? (
+                  <GapsPage {...toolProps} />
+                ) : view === "map" ? (
+                  <MapPage
+                    collection={collection}
+                    theme={theme}
+                    onExplore={follow}
+                    onStartExploring={() => setView("explore")}
+                  />
+                ) : view === "compare" ? (
+                  <ComparePage {...toolProps} />
+                ) : (
+                  <UpdatesPage
+                    {...toolProps}
+                    updates={updates}
+                    checking={checkingUpdates}
+                    lastCheckedAt={settings.lastCheckedAt}
+                    onCheck={() => void handleCheckUpdates()}
+                  />
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>
