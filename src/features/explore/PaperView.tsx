@@ -302,9 +302,9 @@ export function PaperView({
         </div>
       </article>
 
-      <section className="neighborhood" aria-label="Where this paper sits">
+      <section className="neighborhood" aria-label="Before and after this paper">
         <div className="neighborhood-header">
-          <h2>Where it sits in the literature</h2>
+          <h2>Before and after this paper</h2>
           <div className="filters" aria-label="Filters">
             <label className="year-field">
               <span>From</span>

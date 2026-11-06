@@ -25,6 +25,8 @@
   --ink: #8c2f24;
   --ink-text: #ffffff;
   --ink-soft: #f6ebe8;
+  --spark: #d9901f;
+  --spark-text: #1c1a17;
   --negative: #b3261e;
   --google-bg: #1f1f1f;
   --google-text: #ffffff;
@@ -48,6 +50,8 @@
   --ink: #e0907f;
   --ink-text: #141415;
   --ink-soft: #2a1e1b;
+  --spark: #e8a93a;
+  --spark-text: #141415;
   --negative: #e5484d;
   --google-bg: #ffffff;
   --google-text: #1f1f1f;
@@ -382,10 +386,18 @@ input[type="checkbox"] {
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 16px;
   font-weight: 600;
   line-height: 20px;
   white-space: nowrap;
+}
+
+.brand-mark {
+  flex: 0 0 auto;
+  display: block;
 }
 
 .wordmark-second {
@@ -615,7 +627,7 @@ input[type="checkbox"] {
 }
 
 .search-field:focus-within {
-  border-bottom-color: var(--ink);
+  border-bottom-color: var(--spark);
 }
 
 .search-icon {
@@ -631,6 +643,7 @@ input.search-input {
   border: 0;
   background: transparent;
   font-size: 15px;
+  caret-color: var(--spark);
 }
 
 input.search-input:focus-visible {
@@ -663,8 +676,8 @@ input.search-input:focus-visible {
   height: 40px;
   display: grid;
   place-items: center;
-  background: var(--ink);
-  color: var(--ink-text);
+  background: var(--spark);
+  color: var(--spark-text);
   transition:
     filter var(--fast) var(--ease),
     transform var(--fast) var(--ease);
@@ -771,85 +784,95 @@ input.search-input:focus-visible {
   padding: 32px 32px 14vh;
 }
 
-.pathway-drawing {
-  display: block;
-  width: 100%;
-  max-width: 560px;
-  height: auto;
-  margin: 0 0 32px -6px;
-  overflow: visible;
+/* Hero chart: a small, true picture of the paper page. */
+.hero-chart {
+  margin: 0 0 40px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
 }
 
-.pathway-line {
-  fill: none;
-  stroke: var(--text-3);
-  stroke-width: 2;
-  stroke-linecap: square;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  animation: draw 1400ms var(--ease) 100ms backwards;
+.hero-chart-label {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 16px;
 }
 
-.pathway-stop {
-  fill: var(--bg);
-  stroke: var(--text-2);
-  stroke-width: 2;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: pop 400ms var(--ease) backwards;
+.hero-chart-plot {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
 }
 
-.pathway-stop.current {
-  fill: var(--ink);
-  stroke: var(--ink);
+.hero-chart-plot::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 50%;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.hero-column {
+  position: relative;
+  width: 14px;
+  display: grid;
+  grid-template-rows: 58px 58px;
+  row-gap: 12px;
+  animation: rise 500ms var(--ease) backwards;
+}
+
+.hero-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-stack.above {
+  justify-content: flex-end;
+}
+
+.hero-stack span {
+  height: 8px;
+  background: var(--text-3);
+}
+
+.hero-stack.below span {
+  background: var(--ink);
+}
+
+.hero-column.center::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--spark);
+}
+
+.hero-center-label {
+  position: absolute;
+  top: -6px;
+  left: 14px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .home-title {
-  max-width: 18ch;
+  max-width: 20ch;
   font-size: 40px;
   font-weight: 600;
   line-height: 48px;
   text-wrap: balance;
 }
 
-.home-lede {
-  margin-top: 16px;
-  max-width: 50ch;
-  color: var(--text-2);
-  font-size: 17px;
-  line-height: 26px;
-}
-
 .home-search {
-  margin-top: 36px;
-}
-
-.home-examples {
-  margin-top: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 16px;
-  font-size: 13px;
-}
-
-.home-examples > span {
-  color: var(--text-3);
-}
-
-.home-examples button {
-  color: var(--text-2);
-  text-decoration: underline;
-  text-decoration-color: var(--line-strong);
-  text-underline-offset: 4px;
-  transition:
-    color var(--fast) var(--ease),
-    text-decoration-color var(--fast) var(--ease);
-}
-
-.home-examples button:hover {
-  color: var(--text);
-  text-decoration-color: var(--ink);
+  margin-top: 32px;
 }
 
 .home-continue {
@@ -1156,48 +1179,120 @@ input.year-input {
   white-space: nowrap;
 }
 
-/* Timeline: the paper's place in time, the moment of this screen. */
+/* Timeline: when the surrounding papers were published. */
 .timeline {
   margin: 20px 0 40px;
-  padding: 20px 28px 12px;
+  padding: 20px 28px 16px;
   background: var(--surface);
 }
 
-.timeline-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 24px;
+.timeline-caption {
   color: var(--text-2);
   font-size: 13px;
 }
 
-.timeline-key {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 6px;
-  vertical-align: -1px;
-  border: 1.5px solid var(--text-2);
-}
-
-.timeline-key.citing {
-  background: var(--text-2);
-}
-
-.timeline-plot {
+.timeline-chart {
   position: relative;
-  margin-top: 20px;
+  margin: 20px 0 0;
+  padding-bottom: 24px;
+}
+
+.timeline-half {
+  position: relative;
+}
+
+.timeline-side-label {
+  position: absolute;
+  left: 0;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.timeline-half.above .timeline-side-label {
+  top: 0;
+}
+
+.timeline-half.below .timeline-side-label {
+  bottom: 0;
+}
+
+.timeline-side-label .tabular {
+  margin-left: 4px;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .timeline-axis {
-  position: absolute;
-  left: 0;
-  right: 0;
   height: 1px;
   background: var(--line-strong);
 }
 
-.timeline-tick {
+.timeline-column {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+}
+
+.timeline-block {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  padding: 0;
+  transition:
+    background-color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.timeline-block.cites {
+  background: var(--text-3);
+}
+
+.timeline-block.cited-by {
+  background: var(--ink);
+}
+
+.timeline-block:hover,
+.timeline-block.active {
+  z-index: 1;
+  background: var(--text);
+  transform: scaleY(1.5);
+}
+
+.timeline-center {
+  position: absolute;
+  top: -8px;
+  bottom: 16px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--spark);
+  pointer-events: none;
+}
+
+.timeline-center-label {
+  position: absolute;
+  top: -2px;
+  left: 8px;
+  padding: 0 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.timeline-ticks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+}
+
+.timeline-ticks span {
   position: absolute;
   transform: translateX(-50%);
   color: var(--text-3);
@@ -1205,46 +1300,10 @@ input.year-input {
   line-height: 16px;
 }
 
-.timeline-center {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  margin-left: -1px;
-  background: var(--ink);
-}
-
-.timeline-center-label {
-  position: absolute;
-  top: -2px;
-  left: 6px;
-  color: var(--ink);
+.timeline-note {
+  margin-top: 8px;
+  color: var(--text-3);
   font-size: 12px;
-  font-weight: 600;
-}
-
-.timeline-paper {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  margin-left: -4.5px;
-  border: 1.5px solid var(--text-2);
-  background: var(--surface);
-  transition:
-    background-color var(--fast) var(--ease),
-    border-color var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
-}
-
-.timeline-paper.citing {
-  background: var(--text-2);
-}
-
-.timeline-paper:hover,
-.timeline-paper.active {
-  z-index: 1;
-  border-color: var(--ink);
-  background: var(--ink);
-  transform: scale(1.4);
 }
 
 .list-columns {
@@ -2003,19 +2062,6 @@ input.year-input {
   }
 }
 
-@keyframes draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-
-@keyframes pop {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -2120,19 +2166,12 @@ input.year-input {
     padding: 32px 20px 64px;
   }
 
-  .pathway-drawing {
-    margin-bottom: 24px;
-  }
 
   .home-title {
     font-size: 30px;
     line-height: 36px;
   }
 
-  .home-lede {
-    font-size: 16px;
-    line-height: 24px;
-  }
 
   .search-panel.hero .search-field {
     height: 52px;

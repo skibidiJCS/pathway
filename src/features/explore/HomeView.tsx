@@ -2,52 +2,60 @@ import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Paper } from "../../../lib/research-types";
 
-const examples = [
-  "Attention Is All You Need",
-  "10.1038/nature14539",
-  "Elinor Ostrom",
-];
-
 /**
- * A hand-drawn route through five papers: where you start, where it leads.
- * Squares match the app's paper markers; the last stop is the one you are on.
+ * A small, honest picture of what the app shows: one paper on a time line,
+ * the papers it cites stacked before it, the papers citing it after. Same
+ * marks as the real chart on the paper page. No years or numbers, so it
+ * claims nothing.
  */
-function PathwayDrawing() {
-  const stops: Array<[number, number]> = [
-    [24, 96],
-    [178, 44],
-    [326, 82],
-    [478, 36],
-    [616, 58],
-  ];
+const columns: Array<{ cites: number; citedBy: number }> = [
+  { cites: 1, citedBy: 0 },
+  { cites: 0, citedBy: 0 },
+  { cites: 2, citedBy: 0 },
+  { cites: 1, citedBy: 0 },
+  { cites: 3, citedBy: 0 },
+  { cites: 2, citedBy: 0 },
+  { cites: 4, citedBy: 0 },
+  { cites: 0, citedBy: 0 }, // the paper itself
+  { cites: 0, citedBy: 2 },
+  { cites: 0, citedBy: 4 },
+  { cites: 0, citedBy: 5 },
+  { cites: 0, citedBy: 3 },
+  { cites: 0, citedBy: 4 },
+  { cites: 0, citedBy: 2 },
+  { cites: 0, citedBy: 1 },
+];
+const CENTER = 7;
+
+function HeroChart() {
   return (
-    <svg
-      className="pathway-drawing"
-      viewBox="0 0 640 128"
-      role="img"
-      aria-label="A path linking five papers"
-    >
-      <path
-        className="pathway-line"
-        d="M24 96 C 80 96, 112 44, 178 44 S 272 82, 326 82 S 420 36, 478 36 S 576 58, 616 58"
-        pathLength={1}
-      />
-      {stops.map(([x, y], index) => {
-        const last = index === stops.length - 1;
-        const size = last ? 20 : 13;
-        return (
-          <rect
-            key={`${x}-${y}`}
-            className={`pathway-stop${last ? " current" : ""}`}
-            x={x - size / 2}
-            y={y - size / 2}
-            width={size}
-            height={size}
-            style={{ animationDelay: `${300 + index * 180}ms` }}
-          />
-        );
-      })}
-    </svg>
+    <figure className="hero-chart" aria-hidden="true">
+      <span className="hero-chart-label above">It cites</span>
+      <div className="hero-chart-plot">
+        {columns.map((column, index) => (
+          <div
+            key={index}
+            className={`hero-column${index === CENTER ? " center" : ""}`}
+            style={{ animationDelay: `${index * 40}ms` }}
+          >
+            <div className="hero-stack above">
+              {Array.from({ length: column.cites }, (_, i) => (
+                <span key={i} />
+              ))}
+            </div>
+            <div className="hero-stack below">
+              {Array.from({ length: column.citedBy }, (_, i) => (
+                <span key={i} />
+              ))}
+            </div>
+            {index === CENTER ? (
+              <span className="hero-center-label">Your paper</span>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <span className="hero-chart-label below">Cited by</span>
+    </figure>
   );
 }
 
@@ -55,34 +63,20 @@ export function HomeView({
   search,
   accessory,
   lastPaper,
-  onExample,
   onContinue,
 }: {
   search: ReactNode;
   accessory: ReactNode;
   lastPaper: Paper | null;
-  onExample: (query: string) => void;
   onContinue: (paper: Paper) => void;
 }) {
   return (
     <div className="home">
       {accessory ? <div className="home-topbar">{accessory}</div> : null}
       <div className="home-inner">
-        <PathwayDrawing />
-        <h1 className="home-title">Start from one paper and follow where it leads</h1>
-        <p className="home-lede">
-          See what a paper builds on and what was built on it. Open the next
-          one, and the next, and save the ones worth reading
-        </p>
+        <HeroChart />
+        <h1 className="home-title">See what any paper cites, and what cites it</h1>
         <div className="home-search">{search}</div>
-        <p className="home-examples">
-          <span>Try</span>
-          {examples.map((example) => (
-            <button key={example} type="button" onClick={() => onExample(example)}>
-              {example}
-            </button>
-          ))}
-        </p>
         {lastPaper ? (
           <button
             type="button"

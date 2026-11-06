@@ -229,7 +229,6 @@ export function PathwayApp() {
               search={search("hero")}
               accessory={compactLayout ? null : signInButton(false)}
               lastPaper={explorationHistory[0] ?? null}
-              onExample={(example) => setQuery(example)}
               onContinue={follow}
             />
           </div>

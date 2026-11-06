@@ -1,26 +1,14 @@
 import { useMemo } from "react";
 import type { Paper } from "../../../lib/research-types";
 
-const STEP = 12; // vertical distance between stacked squares
-const AXIS_GAP = 14; // space between the axis and the first square
+const CELL = 8; // height of one paper in a stack
+const GAP = 2; // space between papers in a stack
+const PAD = 6; // space between the line and the first paper
 
-interface Placed {
-  paper: Paper;
+interface Column {
   year: number;
-  level: number;
-  group: "reference" | "citing";
-}
-
-function stack(papers: Paper[], group: Placed["group"]): Placed[] {
-  const levels = new Map<number, number>();
-  return papers
-    .filter((paper): paper is Paper & { year: number } => paper.year !== null)
-    .sort((a, b) => b.citationCount - a.citationCount)
-    .map((paper) => {
-      const level = levels.get(paper.year) ?? 0;
-      levels.set(paper.year, level + 1);
-      return { paper, year: paper.year, level, group };
-    });
+  cites: Paper[];
+  citedBy: Paper[];
 }
 
 function tickStep(span: number): number {
@@ -30,10 +18,14 @@ function tickStep(span: number): number {
   return 20;
 }
 
+function byCitations(a: Paper, b: Paper): number {
+  return b.citationCount - a.citationCount;
+}
+
 /**
- * Every paper in the neighborhood on one year axis. What the paper builds on
- * sits above the line, what was built on it below, the paper itself is the
- * ink rule. Each square opens that paper.
+ * When the surrounding papers were published. One block per paper, stacked
+ * by year: above the line the papers this one cites, below the line the
+ * papers that cite it. The labelled rule is the paper itself.
  */
 export function CitationTimeline({
   center,
@@ -49,91 +41,132 @@ export function CitationTimeline({
   onSelect: (paper: Paper) => void;
 }) {
   const layout = useMemo(() => {
-    const above = stack(references, "reference");
-    const below = stack(citing, "citing");
-    const years = [...above, ...below].map((item) => item.year);
+    const years = [...references, ...citing]
+      .map((paper) => paper.year)
+      .filter((year): year is number => year !== null);
     if (center.year !== null) years.push(center.year);
     if (years.length === 0) return null;
-    const min = Math.min(...years) - 1;
-    const max = Math.max(...years) + 1;
-    const span = Math.max(max - min, 1);
-    const maxAbove = above.reduce((m, item) => Math.max(m, item.level + 1), 0);
-    const maxBelow = below.reduce((m, item) => Math.max(m, item.level + 1), 0);
+    const min = Math.min(...years);
+    const max = Math.max(...years);
+    const span = max - min + 1;
+    const columns = new Map<number, Column>();
+    const column = (year: number) => {
+      const existing = columns.get(year);
+      if (existing) return existing;
+      const created = { year, cites: [], citedBy: [] } as Column;
+      columns.set(year, created);
+      return created;
+    };
+    for (const paper of references) {
+      if (paper.year !== null) column(paper.year).cites.push(paper);
+    }
+    for (const paper of citing) {
+      if (paper.year !== null) column(paper.year).citedBy.push(paper);
+    }
+    for (const entry of columns.values()) {
+      entry.cites.sort(byCitations);
+      entry.citedBy.sort(byCitations);
+    }
+    const tallest = (key: "cites" | "citedBy") =>
+      Math.max(1, ...[...columns.values()].map((entry) => entry[key].length));
     const step = tickStep(span);
     const ticks: number[] = [];
     for (let year = Math.ceil(min / step) * step; year <= max; year += step) {
       ticks.push(year);
     }
     return {
-      items: [...above, ...below],
+      columns: [...columns.values()],
       min,
       span,
       ticks,
-      axisTop: AXIS_GAP + Math.max(maxAbove, 1) * STEP + 4,
-      height:
-        AXIS_GAP * 2 + (Math.max(maxAbove, 1) + Math.max(maxBelow, 1)) * STEP + 32,
+      above: tallest("cites") * (CELL + GAP) + PAD,
+      below: tallest("citedBy") * (CELL + GAP) + PAD,
     };
   }, [center.year, citing, references]);
 
   if (!layout) return null;
-  const x = (year: number) => `${((year - layout.min) / layout.span) * 100}%`;
+  const left = (year: number) => `${((year - layout.min + 0.5) / layout.span) * 100}%`;
+  const width = `min(20px, calc(${100 / layout.span}% - 2px))`;
   const undated =
-    references.filter((p) => p.year === null).length +
-    citing.filter((p) => p.year === null).length;
+    references.filter((paper) => paper.year === null).length +
+    citing.filter((paper) => paper.year === null).length;
+
+  const block = (paper: Paper, kind: "cites" | "cited-by", index: number) => (
+    <button
+      key={paper.id}
+      type="button"
+      className={`timeline-block ${kind}${paper.id === selectedId ? " active" : ""}`}
+      style={
+        kind === "cites"
+          ? { bottom: PAD + index * (CELL + GAP) }
+          : { top: PAD + index * (CELL + GAP) }
+      }
+      onClick={() => onSelect(paper)}
+      title={`${paper.title}, ${paper.year}`}
+      aria-label={`${paper.title}, ${paper.year}`}
+    />
+  );
 
   return (
     <figure className="timeline">
-      <figcaption className="timeline-legend">
-        <span>
-          <i className="timeline-key reference" aria-hidden /> Builds on{" "}
-          <span className="tabular">{references.length}</span>
-        </span>
-        <span>
-          <i className="timeline-key citing" aria-hidden /> Built upon by{" "}
-          <span className="tabular">{citing.length}</span>
-        </span>
-        {undated ? <span className="tabular">{undated} without a year</span> : null}
+      <figcaption className="timeline-caption">
+        Each block is one paper, placed by the year it was published
       </figcaption>
-      <div className="timeline-plot" style={{ height: layout.height }}>
-        <div className="timeline-axis" style={{ top: layout.axisTop }} />
-        {layout.ticks.map((year) => (
-          <span
-            key={year}
-            className="timeline-tick tabular"
-            style={{ left: x(year), top: layout.height - 18 }}
-          >
-            {year}
+      <div className="timeline-chart">
+        <div className="timeline-half above" style={{ height: layout.above }}>
+          <span className="timeline-side-label">
+            Papers it cites <span className="tabular">{references.length}</span>
           </span>
-        ))}
+          {layout.columns.map((entry) =>
+            entry.cites.length ? (
+              <div
+                key={entry.year}
+                className="timeline-column"
+                style={{ left: left(entry.year), width }}
+              >
+                {entry.cites.map((paper, index) => block(paper, "cites", index))}
+              </div>
+            ) : null,
+          )}
+        </div>
+        <div className="timeline-axis" />
+        <div className="timeline-half below" style={{ height: layout.below }}>
+          <span className="timeline-side-label">
+            Papers citing it <span className="tabular">{citing.length}</span>
+          </span>
+          {layout.columns.map((entry) =>
+            entry.citedBy.length ? (
+              <div
+                key={entry.year}
+                className="timeline-column"
+                style={{ left: left(entry.year), width }}
+              >
+                {entry.citedBy.map((paper, index) => block(paper, "cited-by", index))}
+              </div>
+            ) : null,
+          )}
+        </div>
         {center.year !== null ? (
-          <span
-            className="timeline-center"
-            style={{ left: x(center.year), height: layout.height - 22 }}
-            title={`${center.title}, ${center.year}`}
-          >
-            <span className="timeline-center-label tabular">{center.year}</span>
-          </span>
+          <div className="timeline-center" style={{ left: left(center.year) }}>
+            <span className="timeline-center-label tabular">
+              This paper, {center.year}
+            </span>
+          </div>
         ) : null}
-        {layout.items.map((item) => {
-          const top =
-            item.group === "reference"
-              ? layout.axisTop - AXIS_GAP - item.level * STEP
-              : layout.axisTop + AXIS_GAP - 8 + item.level * STEP;
-          return (
-            <button
-              key={`${item.group}-${item.paper.id}`}
-              type="button"
-              className={`timeline-paper ${item.group}${
-                item.paper.id === selectedId ? " active" : ""
-              }`}
-              style={{ left: x(item.year), top }}
-              onClick={() => onSelect(item.paper)}
-              title={`${item.paper.title}, ${item.year}`}
-              aria-label={`${item.paper.title}, ${item.year}`}
-            />
-          );
-        })}
+        <div className="timeline-ticks">
+          {layout.ticks.map((year) => (
+            <span key={year} className="tabular" style={{ left: left(year) }}>
+              {year}
+            </span>
+          ))}
+        </div>
       </div>
+      {undated ? (
+        <p className="timeline-note tabular">
+          {undated} paper{undated === 1 ? " has" : "s have"} no year and{" "}
+          {undated === 1 ? "is" : "are"} only in the lists below
+        </p>
+      ) : null}
     </figure>
   );
 }
