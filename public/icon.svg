@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <rect width="24" height="24" fill="#f8fafc"/>
-  <path d="M6.5 22V3.5H13a5.25 5.25 0 0 1 0 10.5H6.5" fill="none" stroke="#1e3a5f" stroke-width="3" stroke-linecap="butt" stroke-linejoin="miter"/>
-  <path d="M12 14L18.5 22" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="butt"/>
+  <rect width="24" height="24" rx="5" fill="#fafafa"/>
+  <defs><clipPath id="baseline"><rect x="0" y="0" width="24" height="21.5"/></clipPath></defs>
+  <g transform="translate(-0.5 0.25)">
+    <path d="M11.2 12.2 L19.4 23.2" fill="none" stroke="#b45309" stroke-width="3" clip-path="url(#baseline)"/>
+    <path d="M6.5 21.5 V3.5 H12.25 A4.75 4.75 0 0 1 12.25 13 H6.5" fill="none" stroke="#1e3a5f" stroke-width="3" stroke-linejoin="miter"/>
+  </g>
 </svg>

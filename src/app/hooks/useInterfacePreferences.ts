@@ -32,12 +32,10 @@ export function useInterfacePreferences() {
     } catch {}
   }, [theme]);
 
-  const toggleTheme = () => {
-    const nextTheme: Theme =
-      document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  const chooseTheme = (nextTheme: Theme) => {
     document.documentElement.dataset.theme = nextTheme;
     setTheme(nextTheme);
   };
 
-  return { compactSearchPlaceholder, compactLayout, theme, toggleTheme };
+  return { compactSearchPlaceholder, compactLayout, theme, chooseTheme };
 }

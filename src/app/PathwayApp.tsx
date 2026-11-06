@@ -60,7 +60,7 @@ export function PathwayApp() {
     selectGraphPaper,
     resetExplorer,
   } = useCitationExplorer();
-  const { compactSearchPlaceholder, compactLayout, theme, toggleTheme } =
+  const { compactSearchPlaceholder, compactLayout, theme, chooseTheme } =
     useInterfacePreferences();
   const {
     collection,
@@ -158,6 +158,17 @@ export function PathwayApp() {
     navigate({ view: "home" });
   };
 
+  /** The sidebar's Find field: go where the search box is and focus it. */
+  const find = () => {
+    setNavOpen(false);
+    if (route.view !== "home" && route.view !== "paper") {
+      navigate(graph ? { view: "paper", id: graph.centerId } : { view: "home" });
+    }
+    window.setTimeout(() => {
+      document.querySelector<HTMLInputElement>(".search-input")?.focus();
+    }, 60);
+  };
+
   /** Back to exploring: the open paper if there is one, otherwise home. */
   const explore = () => {
     setNavOpen(false);
@@ -240,7 +251,9 @@ export function PathwayApp() {
         onOpen={openPage}
         onFolder={openFolder}
         onSignOut={() => void handleSignOut()}
-        onToggleTheme={toggleTheme}
+        onChooseTheme={chooseTheme}
+        onFind={find}
+        signInButton={signInButton(false)}
         onClose={() => setNavOpen(false)}
       />
 

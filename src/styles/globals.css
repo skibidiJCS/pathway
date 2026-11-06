@@ -1,8 +1,7 @@
 /*
  * Pathway Research
- * One typeface (the reader's system face), solid neutral colors, one ink
- * accent, square edges. Space separates things; rules only where a
- * boundary is real.
+ * Atkinson Hyperlegible, Vercel-style neutral greys, navy ink and a rare
+ * amber accent. Controls have a small radius; space separates things.
  */
 
 :root {
@@ -12,52 +11,53 @@
   --fast: 150ms;
   --sidebar-width: 248px;
 
-  --bg: #f8fafc;
-  --sidebar: #f1f5f9;
+  --radius: 6px;
+  --bg: #fafafa;
+  --sidebar: #fafafa;
   --surface: #ffffff;
-  --raised: #e2e8f0;
-  --hover: #eef2f7;
-  --line: #e2e8f0;
-  --line-strong: #cbd5e1;
-  --text: #0f172a;
-  --text-2: #475569;
-  --text-3: #64748b;
+  --raised: #ebebeb;
+  --hover: #f2f2f2;
+  --line: #ebebeb;
+  --line-strong: #e0e0e0;
+  --text: #171717;
+  --text-2: #4d4d4d;
+  --text-3: #666666;
   --ink: #1e3a5f;
   --ink-text: #ffffff;
-  --ink-soft: #e8eef6;
+  --ink-soft: #f0f0f0;
   --spark: #b45309;
   --spark-text: #ffffff;
   --negative: #dc2626;
   --google-bg: #1f1f1f;
   --google-text: #ffffff;
-  --shadow-float: 0 8px 24px rgba(15, 23, 42, 0.12);
-  --scrim: rgba(15, 23, 42, 0.4);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --scrim: rgba(0, 0, 0, 0.4);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #0b1220;
-  --sidebar: #080e1a;
-  --surface: #111a2e;
-  --raised: #1b2740;
-  --hover: #16213a;
-  --line: #1e293b;
-  --line-strong: #334155;
-  --text: #e2e8f0;
-  --text-2: #94a3b8;
-  --text-3: #8391a7;
+  --bg: #0a0a0a;
+  --sidebar: #0a0a0a;
+  --surface: #111111;
+  --raised: #1f1f1f;
+  --hover: #1a1a1a;
+  --line: #1f1f1f;
+  --line-strong: #2e2e2e;
+  --text: #ededed;
+  --text-2: #a1a1a1;
+  --text-3: #8f8f8f;
   --ink: #9db7da;
-  --ink-text: #0b1220;
-  --ink-soft: #1a2a44;
+  --ink-text: #0a0a0a;
+  --ink-soft: #1a1a1a;
   --spark: #f59e0b;
-  --spark-text: #0b1220;
+  --spark-text: #0a0a0a;
   --negative: #f87171;
   --google-bg: #ffffff;
   --google-text: #1f1f1f;
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.45);
   --scrim: rgba(0, 0, 0, 0.5);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238391a7' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238f8f8f' stroke-width='1.5'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 
@@ -115,6 +115,16 @@ textarea {
   font: inherit;
   color: inherit;
   border-radius: 0;
+}
+
+input[type="text"],
+input[type="search"]:not(.search-input),
+select,
+textarea,
+.google-button,
+.search-submit,
+.key {
+  border-radius: var(--radius);
 }
 
 button {
@@ -186,6 +196,7 @@ a {
 
 .button {
   height: 40px;
+  border-radius: var(--radius);
   padding: 0 12px;
   display: inline-flex;
   align-items: center;
@@ -267,6 +278,7 @@ a {
 .icon-button {
   width: 40px;
   height: 40px;
+  border-radius: var(--radius);
   flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
@@ -442,7 +454,7 @@ input[type="checkbox"] {
 }
 
 .sidebar-brand-row {
-  height: 64px;
+  height: 60px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -458,29 +470,74 @@ input[type="checkbox"] {
   padding: 4px 8px 24px;
 }
 
+/* Find: looks like a field, opens search. */
+.find-trigger {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px 0 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 15px;
+  transition:
+    border-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.find-trigger:hover {
+  border-color: var(--text-3);
+  color: var(--text-2);
+}
+
+.find-trigger span:first-of-type {
+  flex: 1;
+  text-align: left;
+}
+
+.keycap {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .nav-group + .nav-group {
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .nav-heading {
-  padding: 0 8px;
+  padding: 0 10px;
   margin-bottom: 4px;
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
-  line-height: 16px;
+  line-height: 20px;
 }
 
+/* Rows like Vercel's: rounded, quiet, the current one filled. */
 .nav-item {
   width: 100%;
   height: 40px;
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) auto;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 0 8px;
+  gap: 12px;
+  padding: 0 10px;
+  border-radius: var(--radius);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: 15px;
   text-decoration: none;
   transition:
     background-color var(--fast) var(--ease),
@@ -499,15 +556,10 @@ input[type="checkbox"] {
 .nav-item.active {
   background: var(--raised);
   color: var(--text);
-  font-weight: 700;
-}
-
-.nav-item.active .nav-icon {
-  color: var(--ink);
 }
 
 .nav-icon {
-  color: var(--text-3);
+  color: currentColor;
 }
 
 .nav-label {
@@ -518,87 +570,125 @@ input[type="checkbox"] {
 
 .nav-meta {
   color: var(--text-3);
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
 .sidebar-footer {
+  position: relative;
   flex: 0 0 auto;
   padding: 8px;
   border-top: 1px solid var(--line);
-}
-
-.account-block {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0 4px 8px;
-  margin-bottom: 2px;
-}
-
-.account-text {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-}
-
-.account-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.sync-label {
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 16px;
-}
-
-.sync-label.error {
-  color: var(--negative);
 }
 
 .sidebar-scrim {
   display: none;
 }
 
-/* The one main action, set apart from everything else in the sidebar. */
-.explore-link {
-  width: 100%;
-  height: 40px;
-  display: flex;
+/* Settings: one button, everything else in its menu. */
+.settings-menu {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% - 4px);
+  z-index: 30;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  animation: fade-rise 180ms var(--ease);
+}
+
+.settings-section + .settings-section {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-label {
+  display: block;
+  padding: 6px 10px 4px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.settings-account {
+  display: grid;
+  padding: 4px 10px 8px;
+}
+
+.settings-account strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-account span {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.settings-account .sync-error {
+  color: var(--negative);
+}
+
+.settings-section .google-button {
+  width: calc(100% - 8px);
+  margin: 2px 4px 4px;
+  justify-content: center;
+  border-radius: var(--radius);
+}
+
+.theme-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin: 0 4px 4px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--hover);
+}
+
+.theme-switch button {
+  height: 34px;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 12px;
-  margin-bottom: 24px;
-  background: var(--ink);
-  color: var(--ink-text);
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius);
+  color: var(--text-2);
   font-size: 14px;
-  font-weight: 700;
   transition:
-    filter var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
+    background-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
 }
 
-.explore-link:hover {
-  filter: brightness(1.08);
-}
-
-.explore-link:active {
-  transform: scale(0.98);
-}
-
-.explore-link:not(.active) {
+.theme-switch button[aria-pressed="true"] {
   background: var(--surface);
   color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-.explore-link:not(.active) svg {
-  color: var(--ink);
+.shortcut-list {
+  display: grid;
+  gap: 2px;
+  padding: 0 10px 6px;
+  font-size: 14px;
+}
+
+.shortcut-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  color: var(--text-2);
+}
+
+.shortcut-list .keycap {
+  min-width: 22px;
+  height: 22px;
 }
 
 /* ---------- Main layout ---------- */
