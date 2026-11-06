@@ -6,7 +6,6 @@ import type {
 } from "../../../lib/research-types";
 import type { LoadState } from "../../app/app-types";
 import { Loader, TriangleAlert } from "lucide-react";
-import { BrandMark } from "../../app/BrandMark";
 import { CitationGraph } from "./CitationGraph";
 import { PaperDetails } from "./PaperDetails";
 
@@ -56,29 +55,10 @@ export function ExploreWorkspace({
       <div className="graph-stage">
         {graphState === "idle" ? (
           <div className="graph-state idle">
-            <div className="idle-schematic" aria-hidden="true">
-              <div className="schematic-side">
-                <span className="schematic-label">References</span>
-                <span className="schematic-line" />
-                <span className="schematic-line short" />
-                <span className="schematic-line" />
-              </div>
-              <div className="schematic-center">
-                <BrandMark size={16} />
-                <span>Your paper</span>
-              </div>
-              <div className="schematic-side">
-                <span className="schematic-label">Cited by</span>
-                <span className="schematic-line short" />
-                <span className="schematic-line" />
-                <span className="schematic-line short" />
-              </div>
-            </div>
             <h1>Start with a paper</h1>
             <p>
-              Search by title, DOI, keyword or author, then open a result to
-              see what it cites and what cites it. Open any of those papers to
-              keep following the path.
+              Search for a paper to see what it cites and what cites it, then
+              keep following the citations
             </p>
           </div>
         ) : null}
@@ -86,8 +66,8 @@ export function ExploreWorkspace({
         {graphState === "loading" ? (
           <div className="graph-state" role="status">
             <Loader className="state-icon spinning" size={20} strokeWidth={1.5} aria-hidden />
-            <h2>Loading the citation neighborhood</h2>
-            <p>Fetching the paper, its references and the papers that cite it</p>
+            <h2>Loading citations</h2>
+            
           </div>
         ) : null}
 

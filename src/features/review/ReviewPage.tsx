@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { CLOUD_COLLECTION_LIMIT } from "../../../lib/collection";
 import type {
   Paper,
@@ -12,6 +13,7 @@ interface ReviewPageProps {
   collection: SavedPaper[];
   limit: number;
   signedIn: boolean;
+  signInButton: ReactNode;
   mergeCandidate: SavedPaper[] | null;
   theme: Theme;
   updates: Paper[];
@@ -36,6 +38,7 @@ export function ReviewPage({
   collection,
   limit,
   signedIn,
+  signInButton,
   mergeCandidate,
   theme,
   updates,
@@ -44,7 +47,6 @@ export function ReviewPage({
   focus,
   folderFilter,
   onFolderFilterChange,
-  onSignIn,
   onMerge,
   onDismissMerge,
   onExplore,
@@ -57,31 +59,32 @@ export function ReviewPage({
 }: ReviewPageProps) {
   return (
     <section className="review-page">
-      {!firebaseConfigured ? (
-        <div className="review-sync-note">
-          Papers are saved on this device. Google sign-in and sync need the
-          Firebase project values.
-        </div>
-      ) : !signedIn ? (
-        <div className="review-sync-note">
-          Saved on this device only.{" "}
-          <button type="button" className="text-button" onClick={onSignIn}>
-            Sign in with Google
-          </button>{" "}
-          to keep up to {CLOUD_COLLECTION_LIMIT} papers in sync across devices
+      {!signedIn && firebaseConfigured ? (
+        <div className="sync-prompt">
+          <div className="sync-prompt-text">
+            <strong>Only saved on this device</strong>
+            <span>
+              Sign in to keep up to {CLOUD_COLLECTION_LIMIT} papers in sync
+              across your devices
+            </span>
+          </div>
+          {signInButton}
         </div>
       ) : null}
       {mergeCandidate ? (
-        <div className="merge-notice">
-          <span>
-            Add your {mergeCandidate.length} local paper
-            {mergeCandidate.length === 1 ? "" : "s"} to this synced collection?
-          </span>
-          <div>
+        <div className="sync-prompt">
+          <div className="sync-prompt-text">
+            <strong>
+              Add your {mergeCandidate.length} local paper
+              {mergeCandidate.length === 1 ? "" : "s"} to your synced
+              collection?
+            </strong>
+          </div>
+          <div className="sync-prompt-actions">
             <button type="button" className="button primary" onClick={onMerge}>
               Merge
             </button>
-            <button type="button" className="button" onClick={onDismissMerge}>
+            <button type="button" className="button quiet" onClick={onDismissMerge}>
               Keep separate
             </button>
           </div>
@@ -90,7 +93,6 @@ export function ReviewPage({
       <ReviewAudit
         collection={collection}
         limit={limit}
-        synced={signedIn}
         theme={theme}
         updates={updates}
         checkingUpdates={checkingUpdates}

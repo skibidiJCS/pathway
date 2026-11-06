@@ -30,10 +30,10 @@ interface PaperDetailsProps {
 }
 
 const relationLabels: Record<Paper["relation"], string> = {
-  selected: "Center paper",
-  reference: "Reference of the center paper",
-  citing: "Cites the center paper",
-  both: "Cites and is cited by the center paper",
+  selected: "",
+  reference: "Cited by the paper you opened",
+  citing: "Cites the paper you opened",
+  both: "Cites and is cited by the paper you opened",
 };
 
 /** OpenAlex access routes, in words a reader can act on. */
@@ -97,7 +97,9 @@ export function PaperDetails({
       <div id="paper-details-content" className="details-content">
         <div className="detail-toolbar">
           <span className="relation-label">
-            {paper ? relationLabels[paper.relation] : "Paper details"}
+            {paper && paper.relation !== "selected"
+              ? relationLabels[paper.relation]
+              : ""}
           </span>
           {paper ? (
             <button
@@ -151,10 +153,7 @@ export function PaperDetails({
                 </div>
                 <div>
                   <dt>Access</dt>
-                  <dd title={access.hint}>
-                    <span className={`access-dot ${paper.isOpenAccess ? "open" : "closed"}`} aria-hidden />
-                    {access.label}
-                  </dd>
+                  <dd title={access.hint}>{access.label}</dd>
                 </div>
                 {paper.doi ? (
                   <div>
@@ -165,7 +164,7 @@ export function PaperDetails({
               </dl>
 
               <section className="abstract-section" aria-label="Abstract">
-                <h3 className="abstract-heading">Abstract</h3>
+                <h3 className="detail-heading">Abstract</h3>
                 <p className={`abstract${paper.abstract ? "" : " unavailable"}`}>
                   {paper.abstract ?? "OpenAlex has no abstract for this paper"}
                 </p>

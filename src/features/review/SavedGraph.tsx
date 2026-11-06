@@ -60,7 +60,7 @@ function graphStyles(theme: "light" | "dark"): cytoscape.StylesheetJson {
         "border-color": border,
         "border-width": 1,
         color: ink,
-        "font-family": '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif',
+        "font-family": 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
         "font-size": 11,
         "font-weight": 400,
         height: 167,
@@ -270,11 +270,10 @@ export function SavedGraph({
       <aside className="saved-graph-explanation">
         {activePaper ? (
           <>
-            <span className="saved-map-kicker">Selected paper</span>
-            <h3>{activePaper.title}</h3>
-            <p>
-              {activePaper.year ?? "Year unknown"} ·{" "}
-              {activePaper.citationCount.toLocaleString()} citations
+                        <h3>{activePaper.title}</h3>
+            <p className="meta-row tabular">
+              <span>{activePaper.year ?? "Year unknown"}</span>
+              <span>{activePaper.citationCount.toLocaleString()} citations</span>
             </p>
             <button type="button" onClick={() => onExplore(activePaper)}>
               Explore paper
@@ -282,8 +281,7 @@ export function SavedGraph({
           </>
         ) : activeRelationship ? (
           <>
-            <span className="saved-map-kicker">Why they connect</span>
-            <h3>{relationshipLabel(activeRelationship, papers)}</h3>
+                        <h3>{relationshipLabel(activeRelationship, papers)}</h3>
             <ul>
               {activeRelationship.reasons.map((reason) => (
                 <li key={reason}>{reason}</li>
@@ -292,8 +290,7 @@ export function SavedGraph({
           </>
         ) : (
           <>
-            <span className="saved-map-kicker">No links found</span>
-            <h3>No links between these papers</h3>
+                        <h3>No links between these papers</h3>
             <p>
               Their stored citation lists and OpenAlex topics do not overlap
             </p>

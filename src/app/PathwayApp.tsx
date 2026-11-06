@@ -5,12 +5,13 @@ import { ExploreWorkspace } from "../features/explore/ExploreWorkspace";
 import { SearchPanel } from "../features/explore/SearchPanel";
 import { ReviewPage } from "../features/review/ReviewPage";
 import type { ReviewFocus, ReviewSection, View } from "./app-types";
-import { BrandMark } from "./BrandMark";
+import { GoogleSignInButton } from "./GoogleSignInButton";
 import { useCitationExplorer } from "./hooks/useCitationExplorer";
 import { useCollectionManager } from "./hooks/useCollectionManager";
 import { useInterfacePreferences } from "./hooks/useInterfacePreferences";
 import { usePaperSearch } from "./hooks/usePaperSearch";
 import { Sidebar } from "./Sidebar";
+import { Wordmark } from "./Wordmark";
 
 export function PathwayApp() {
   const [view, setView] = useState<View>("explore");
@@ -137,6 +138,15 @@ export function PathwayApp() {
     }));
   };
 
+  const signInButton = (compact: boolean) => (
+    <GoogleSignInButton
+      onSignIn={() => void handleSignIn()}
+      busy={authBusy}
+      ready={authReady}
+      compact={compact}
+    />
+  );
+
   const shellClasses = [
     "app-shell",
     navOpen ? "nav-open" : "",
@@ -152,14 +162,11 @@ export function PathwayApp() {
         activeSection={activeSection}
         activeFolder={folderFilter}
         collection={collection}
-        collectionLimit={collectionLimit}
         updatesCount={updates.length}
         history={explorationHistory}
         currentPaperId={graph?.centerId ?? null}
         account={account}
         syncState={syncState}
-        authBusy={authBusy}
-        authReady={authReady}
         theme={theme}
         compact={compactLayout}
         open={navOpen}
@@ -172,7 +179,6 @@ export function PathwayApp() {
         onSection={openSection}
         onFolder={openFolder}
         onTrailSelect={selectSearchResult}
-        onSignIn={() => void handleSignIn()}
         onSignOut={() => void handleSignOut()}
         onToggleTheme={toggleTheme}
         onClose={() => setNavOpen(false)}
@@ -191,25 +197,19 @@ export function PathwayApp() {
             <Menu size={18} strokeWidth={1.5} aria-hidden />
           </button>
           <button className="brand" type="button" onClick={resetApp}>
-            <BrandMark />
-            <span className="brand-name">Pathway Research</span>
+            <Wordmark />
           </button>
-          <button
-            type="button"
-            className={`mobile-saved${view === "review" ? " active" : ""}`}
-            onClick={view === "review" ? () => setView("explore") : openSaved}
-          >
-            {view === "review" ? (
-              "Explore"
-            ) : (
-              <>
-                Saved{" "}
-                <span className="tabular">
-                  {collection.length}/{collectionLimit}
-                </span>
-              </>
-            )}
-          </button>
+          {account || view === "review" ? (
+            <button
+              type="button"
+              className={`mobile-saved${view === "review" ? " active" : ""}`}
+              onClick={view === "review" ? () => setView("explore") : openSaved}
+            >
+              {view === "review" ? "Explore" : `Saved ${collection.length}`}
+            </button>
+          ) : (
+            signInButton(true)
+          )}
         </header>
 
         {view === "review" ? (
@@ -217,6 +217,7 @@ export function PathwayApp() {
             collection={collection}
             limit={collectionLimit}
             signedIn={Boolean(account)}
+            signInButton={account ? null : signInButton(false)}
             mergeCandidate={mergeCandidate}
             theme={theme}
             updates={updates}
@@ -254,6 +255,7 @@ export function PathwayApp() {
               onMinYearChange={setMinYear}
               onOpenAccessChange={setOpenAccessOnly}
               onSelectPaper={(paper) => void selectSearchResult(paper)}
+              accessory={account ? null : signInButton(false)}
             />
 
             <ExploreWorkspace

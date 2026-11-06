@@ -1,5 +1,5 @@
-import { Search, X } from "lucide-react";
-import type { FormEventHandler } from "react";
+import { ArrowRight, Search, X } from "lucide-react";
+import { useEffect, useRef, type FormEventHandler, type ReactNode } from "react";
 import type {
   CitationGraphData,
   Paper,
@@ -16,12 +16,36 @@ interface SearchPanelProps {
   minYear: string;
   openAccessOnly: boolean;
   compactPlaceholder: boolean;
+  accessory?: ReactNode;
   onSearch: FormEventHandler<HTMLFormElement>;
   onQueryChange: (query: string) => void;
   onDismissResults: () => void;
   onMinYearChange: (year: string) => void;
   onOpenAccessChange: (enabled: boolean) => void;
   onSelectPaper: (paper: Paper) => void;
+}
+
+/**
+ * Mirrors how the OpenAlex proxy routes a query, so the field can say what
+ * it is about to do before the search runs.
+ */
+function queryKind(query: string): string {
+  const trimmed = query.trim();
+  if (trimmed.length < 3) return "";
+  const doi = trimmed
+    .replace(/^doi:\s*/i, "")
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "");
+  if (/^10\.\d{4,9}\/\S+$/i.test(doi)) return "DOI lookup";
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  if (
+    words.length >= 2 &&
+    words.length <= 6 &&
+    trimmed.length <= 90 &&
+    !/\d/.test(trimmed)
+  ) {
+    return "Author or title";
+  }
+  return "Title or keyword";
 }
 
 function resultAuthors(paper: Paper): string {
@@ -40,6 +64,7 @@ export function SearchPanel({
   minYear,
   openAccessOnly,
   compactPlaceholder,
+  accessory,
   onSearch,
   onQueryChange,
   onDismissResults,
@@ -47,6 +72,27 @@ export function SearchPanel({
   onOpenAccessChange,
   onSelectPaper,
 }: SearchPanelProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const kind = queryKind(query);
+
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ) {
+        return;
+      }
+      event.preventDefault();
+      inputRef.current?.focus();
+    };
+    window.addEventListener("keydown", focusSearch);
+    return () => window.removeEventListener("keydown", focusSearch);
+  }, []);
+
   return (
     <section
       className="search-region"
@@ -57,14 +103,10 @@ export function SearchPanel({
     >
       <div className="search-bar">
         <form className="search-row" onSubmit={onSearch} role="search">
-          <div className="search-field">
-            <Search
-              className="search-icon"
-              size={16}
-              strokeWidth={1.5}
-              aria-hidden
-            />
+          <label className="search-field">
+            <Search className="search-icon" size={18} strokeWidth={1.5} aria-hidden />
             <input
+              ref={inputRef}
               className="search-input"
               type="search"
               value={query}
@@ -72,24 +114,41 @@ export function SearchPanel({
               placeholder={
                 compactPlaceholder
                   ? "Title, DOI or author"
-                  : "Title, DOI, keyword or author"
+                  : "Search by title, DOI, keyword or author"
               }
               aria-label="Paper title, DOI, keyword or full author name"
+              aria-describedby="search-kind"
               autoComplete="off"
+              spellCheck={false}
             />
+            <span id="search-kind" className="search-kind" aria-live="polite">
+              {kind}
+            </span>
             {query ? (
               <button
                 className="input-clear"
                 type="button"
-                onClick={() => onQueryChange("")}
+                onClick={() => {
+                  onQueryChange("");
+                  inputRef.current?.focus();
+                }}
                 aria-label="Clear search"
               >
-                <X size={14} strokeWidth={1.5} aria-hidden />
+                <X size={16} strokeWidth={1.5} aria-hidden />
               </button>
             ) : null}
-          </div>
-          <button className="button primary search-button" type="submit" disabled={searching}>
-            {searching ? "Searching…" : "Search"}
+          </label>
+          <button
+            className="search-submit"
+            type="submit"
+            disabled={searching}
+            aria-label="Search"
+          >
+            {searching ? (
+              "Searching…"
+            ) : (
+              <ArrowRight size={18} strokeWidth={1.75} aria-hidden />
+            )}
           </button>
         </form>
 
@@ -98,7 +157,7 @@ export function SearchPanel({
             <label className="year-field">
               <span>From</span>
               <input
-                className="filter-input year-input tabular"
+                className="year-input tabular"
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -108,19 +167,9 @@ export function SearchPanel({
                     event.target.value.replace(/\D/g, "").slice(0, 4),
                   )
                 }
-                placeholder="Year"
+                placeholder="year"
                 aria-label="Show papers published from this year"
               />
-              {minYear ? (
-                <button
-                  className="input-clear"
-                  type="button"
-                  onClick={() => onMinYearChange("")}
-                  aria-label="Clear publication year"
-                >
-                  <X size={14} strokeWidth={1.5} aria-hidden />
-                </button>
-              ) : null}
             </label>
             <label className="oa-filter">
               <input
@@ -132,6 +181,8 @@ export function SearchPanel({
             </label>
           </div>
         ) : null}
+
+        {accessory ? <div className="search-accessory">{accessory}</div> : null}
       </div>
 
       {searchError && !results ? (
@@ -175,10 +226,10 @@ export function SearchPanel({
                     onClick={() => onSelectPaper(paper)}
                   >
                     <span className="result-title">{paper.title}</span>
-                    <span className="result-meta">
+                    <span className="meta-row">
                       <span>{resultAuthors(paper)}</span>
+                      <span className="tabular">{paper.year ?? "Year unknown"}</span>
                       <span className="tabular">
-                        {paper.year ?? "n.d."} ·{" "}
                         {paper.citationCount.toLocaleString()} citations
                       </span>
                     </span>

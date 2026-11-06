@@ -1,6 +1,12 @@
 import type { BridgePaper } from "../../../lib/collection";
 import type { Paper } from "../../../lib/research-types";
-import { compactTitle } from "./review-utils";
+
+function bridgeText(item: BridgePaper): string {
+  const parts = [`Connects ${item.count} of your papers`];
+  if (item.referencedByCount) parts.push(`cited by ${item.referencedByCount}`);
+  if (item.citesSavedCount) parts.push(`cites ${item.citesSavedCount}`);
+  return parts.join(", ");
+}
 
 export function BridgePaperList({
   papers,
@@ -10,32 +16,16 @@ export function BridgePaperList({
   onExplore: (paper: Paper) => void;
 }) {
   if (papers.length === 0) {
-    return (
-      <p className="audit-empty-text">
-        No paper links two of your saved papers yet
-      </p>
-    );
+    return <p className="muted-text">None yet</p>;
   }
   return (
-    <ul className="bridge-paper-list">
+    <ul className="plain-paper-list">
       {papers.map((item) => (
         <li key={item.paper.id}>
-          <button
-            type="button"
-            onClick={() => onExplore(item.paper)}
-            title={item.paper.title}
-          >
-            {compactTitle(item.paper.title)}
+          <button type="button" onClick={() => onExplore(item.paper)}>
+            {item.paper.title}
           </button>
-          <span className="tabular">
-            Links {item.count} saved papers
-            {item.referencedByCount
-              ? ` · cited by ${item.referencedByCount}`
-              : ""}
-            {item.citesSavedCount
-              ? ` · cites ${item.citesSavedCount}`
-              : ""}
-          </span>
+          <span className="tabular">{bridgeText(item)}</span>
         </li>
       ))}
     </ul>
@@ -51,19 +41,15 @@ export function AuditPaperList({
   empty: string;
   onExplore: (paper: Paper) => void;
 }) {
-  if (papers.length === 0) return <p className="audit-empty-text">{empty}</p>;
+  if (papers.length === 0) return <p className="muted-text">{empty}</p>;
   return (
-    <ul className="audit-paper-list">
+    <ul className="plain-paper-list">
       {papers.map((item) => (
         <li key={item.paper.id}>
-          <button
-            type="button"
-            onClick={() => onExplore(item.paper)}
-            title={item.paper.title}
-          >
-            {compactTitle(item.paper.title)}
+          <button type="button" onClick={() => onExplore(item.paper)}>
+            {item.paper.title}
           </button>
-          <span className="tabular">Cited by {item.count} saved papers</span>
+          <span className="tabular">Cited by {item.count} of your papers</span>
         </li>
       ))}
     </ul>

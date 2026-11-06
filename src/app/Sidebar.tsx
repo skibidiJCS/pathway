@@ -5,7 +5,6 @@ import {
   Folder,
   GitCompareArrows,
   Layers,
-  LogIn,
   LogOut,
   Moon,
   Network,
@@ -20,21 +19,18 @@ import { useMemo } from "react";
 import type { Paper, SavedPaper } from "../../lib/research-types";
 import type { PathwayAccount } from "../services/firebase-client";
 import type { ReviewSection, SyncState, Theme, View } from "./app-types";
-import { BrandMark } from "./BrandMark";
+import { Wordmark } from "./Wordmark";
 
 interface SidebarProps {
   view: View;
   activeSection: ReviewSection | null;
   activeFolder: string;
   collection: SavedPaper[];
-  collectionLimit: number;
   updatesCount: number;
   history: Paper[];
   currentPaperId: string | null;
   account: PathwayAccount | null;
   syncState: SyncState;
-  authBusy: boolean;
-  authReady: boolean;
   theme: Theme;
   compact: boolean;
   open: boolean;
@@ -44,7 +40,6 @@ interface SidebarProps {
   onSection: (section: ReviewSection) => void;
   onFolder: (folder: string) => void;
   onTrailSelect: (paper: Paper) => void;
-  onSignIn: () => void;
   onSignOut: () => void;
   onToggleTheme: () => void;
   onClose: () => void;
@@ -102,14 +97,11 @@ export function Sidebar({
   activeSection,
   activeFolder,
   collection,
-  collectionLimit,
   updatesCount,
   history,
   currentPaperId,
   account,
   syncState,
-  authBusy,
-  authReady,
   theme,
   compact,
   open,
@@ -119,7 +111,6 @@ export function Sidebar({
   onSection,
   onFolder,
   onTrailSelect,
-  onSignIn,
   onSignOut,
   onToggleTheme,
   onClose,
@@ -161,8 +152,7 @@ export function Sidebar({
             onClick={onHome}
             title="Start a new search"
           >
-            <BrandMark />
-            <span className="brand-name">Pathway Research</span>
+            <Wordmark />
           </button>
           {compact ? (
             <button
@@ -187,7 +177,7 @@ export function Sidebar({
             <NavItem
               icon={Bookmark}
               label="Saved"
-              meta={`${collection.length}/${collectionLimit}`}
+              meta={String(collection.length)}
               active={view === "review" && !activeSection && !activeFolder}
               onClick={onSaved}
             />
@@ -231,12 +221,11 @@ export function Sidebar({
             <h2 className="nav-heading">Your pathway</h2>
             {trail.length === 0 ? (
               <p className="trail-empty">
-                Each paper you open is added here, so you can retrace the
-                route
+                Papers you open appear here in order
               </p>
             ) : (
               <ol className="trail" aria-label="Papers explored, oldest first">
-                {trail.map((paper, index) => {
+                {trail.map((paper) => {
                   const current = paper.id === currentPaperId;
                   return (
                     <li
@@ -252,9 +241,8 @@ export function Sidebar({
                         <span className="trail-node" aria-hidden />
                         <span className="trail-text">
                           <span className="trail-title">{paper.title}</span>
-                          <span className="trail-meta">
-                            {String(index + 1).padStart(2, "0")} ·{" "}
-                            {paper.year ?? "n.d."}
+                          <span className="trail-meta tabular">
+                            {paper.year ?? "Year unknown"}
                           </span>
                         </span>
                       </button>
@@ -285,20 +273,7 @@ export function Sidebar({
                 <LogOut size={16} strokeWidth={1.5} aria-hidden />
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              className="nav-item"
-              onClick={onSignIn}
-              disabled={authBusy || !authReady}
-            >
-              <LogIn className="nav-icon" size={16} strokeWidth={1.5} aria-hidden />
-              <span className="nav-label">
-                {authBusy ? "Signing in…" : "Sign in to sync"}
-              </span>
-              <span className="nav-meta">Google</span>
-            </button>
-          )}
+          ) : null}
           <button
             type="button"
             className="nav-item"

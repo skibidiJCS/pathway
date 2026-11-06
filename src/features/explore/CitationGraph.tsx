@@ -44,8 +44,8 @@ function PaperRow({ paper, active, weight, onSelect }: PaperRowProps) {
         aria-pressed={active}
       >
         <span className="paper-row-title">{paper.title}</span>
-        <span className="paper-row-meta tabular">
-          <span>{paper.year ?? "n.d."}</span>
+        <span className="meta-row tabular">
+          <span>{paper.year ?? "Year unknown"}</span>
           <span>{paper.citationCount.toLocaleString()} citations</span>
           {paper.relation === "both" ? (
             <span className="mutual">Cites each other</span>
@@ -95,11 +95,6 @@ function PaperGroup({
             {isReference ? "References" : "Cited by"}
             <span className="count tabular">{papers.length}</span>
           </h2>
-          <p>
-            {isReference
-              ? "Earlier work this paper cites"
-              : "Later work that cites this paper"}
-          </p>
         </div>
         <select
           className="compact-select"
@@ -185,7 +180,6 @@ export function CitationGraph({
     >
       {selected ? (
         <header className="center-paper">
-          <span className="center-label">Citation neighborhood of</span>
           <button
             className={`center-title${selected.id === selectedId ? " active" : ""}`}
             type="button"
@@ -194,10 +188,14 @@ export function CitationGraph({
           >
             {selected.title}
           </button>
-          <span className="center-meta tabular">
-            {selected.year ?? "n.d."} ·{" "}
-            {selected.citationCount.toLocaleString()} citations ·{" "}
-            {visibleNodes.length} of {graph.nodes.length} papers shown
+          <span className="meta-row tabular">
+            <span>{selected.year ?? "Year unknown"}</span>
+            <span>{selected.citationCount.toLocaleString()} citations</span>
+            {visibleNodes.length < graph.nodes.length ? (
+              <span>
+                {visibleNodes.length} of {graph.nodes.length} shown
+              </span>
+            ) : null}
           </span>
         </header>
       ) : null}
