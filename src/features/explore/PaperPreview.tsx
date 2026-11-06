@@ -74,7 +74,7 @@ export function PaperPreview({
         inert={!open}
       >
         {paper ? (
-          <div className="preview-content">
+          <div className="preview-content" key={paper.id}>
             <div className="preview-toolbar">
               <span className="relation-label">{relationLabels[paper.relation]}</span>
               <button

@@ -29,10 +29,10 @@ export function PaperLinkList({
   if (items.length === 0) return <p className="muted-text">{empty}</p>;
   return (
     <ul className="paper-link-list">
-      {items.map(({ paper, note }) => {
+      {items.map(({ paper, note }, index) => {
         const saved = savedIds?.has(paper.id) ?? false;
         return (
-          <li key={paper.id}>
+          <li key={paper.id} style={{ ["--i" as string]: Math.min(index, 9) }}>
             <div className="paper-link-text">
               <button
                 type="button"

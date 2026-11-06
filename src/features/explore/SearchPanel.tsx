@@ -171,8 +171,11 @@ export function SearchPanel({
             </p>
           ) : (
             <ul className="result-list">
-              {results.map((paper) => (
-                <li key={paper.id}>
+              {results.map((paper, index) => (
+                <li
+                  key={paper.id}
+                  style={{ ["--i" as string]: Math.min(index, 9) }}
+                >
                   <button
                     className="result-button"
                     type="button"

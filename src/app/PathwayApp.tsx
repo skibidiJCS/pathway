@@ -253,6 +253,7 @@ export function PathwayApp() {
                 </div>
               ) : graph ? (
                 <PaperView
+                  key={graph.centerId}
                   graph={graph}
                   visibleNodes={visibleNodes}
                   selectedId={selectedPaper?.id ?? graph.centerId}

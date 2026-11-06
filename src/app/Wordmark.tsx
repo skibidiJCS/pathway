@@ -1,9 +1,9 @@
 /**
- * The mark is a P drawn as one route: it starts at the brass square, where
- * you begin, climbs and turns back like a path through papers. Fixed brand
- * colors, so it reads the same in both themes. Mirrors public/icon.svg.
+ * The mark: one paper (the brass rule) with what came before it (the block
+ * above, left) and what came after (the block below, right). The same idea
+ * as the chart on every paper page. Mirrors public/icon.svg.
  */
-export function BrandMark({ size = 24 }: { size?: number }) {
+export function BrandMark({ size = 22 }: { size?: number }) {
   return (
     <svg
       className="brand-mark"
@@ -12,16 +12,9 @@ export function BrandMark({ size = 24 }: { size?: number }) {
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
-      <rect width="24" height="24" fill="#8c2f24" />
-      <path
-        d="M8.5 15.5V5.5H16.5V12.5H12"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="2.5"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-      />
-      <rect x="6" y="15" width="5" height="5" fill="#e8a93a" />
+      <rect x="2" y="5" width="8" height="6" fill="var(--text)" />
+      <rect x="14" y="13" width="8" height="8" fill="var(--ink)" />
+      <rect x="11" y="2" width="2" height="20" fill="var(--spark)" />
     </svg>
   );
 }

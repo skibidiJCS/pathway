@@ -29,23 +29,25 @@ const CENTER = 7;
 
 function HeroChart() {
   return (
-    <figure className="hero-chart" aria-hidden="true">
-      <span className="hero-chart-label above">It cites</span>
-      <div className="hero-chart-plot">
+    <figure className="hero-chart">
+      <div className="hero-chart-plot" aria-hidden="true">
+        <span className="hero-label cites">Papers it cites</span>
+        <span className="hero-end earlier">Older</span>
+        <span className="hero-end later">Newer</span>
         {columns.map((column, index) => (
           <div
             key={index}
             className={`hero-column${index === CENTER ? " center" : ""}`}
-            style={{ animationDelay: `${index * 40}ms` }}
+            style={{ ["--col" as string]: index }}
           >
             <div className="hero-stack above">
               {Array.from({ length: column.cites }, (_, i) => (
-                <span key={i} />
+                <span key={i} style={{ ["--row" as string]: i }} />
               ))}
             </div>
             <div className="hero-stack below">
               {Array.from({ length: column.citedBy }, (_, i) => (
-                <span key={i} />
+                <span key={i} style={{ ["--row" as string]: i }} />
               ))}
             </div>
             {index === CENTER ? (
@@ -53,8 +55,11 @@ function HeroChart() {
             ) : null}
           </div>
         ))}
+        <span className="hero-label cited-by">Papers that cite it</span>
       </div>
-      <span className="hero-chart-label below">Cited by</span>
+      <figcaption>
+        Each block is one paper. Open any paper and you get this view of it
+      </figcaption>
     </figure>
   );
 }

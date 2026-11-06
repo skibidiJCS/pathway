@@ -11,6 +11,7 @@ import type {
 
 interface CollectionRowProps {
   entry: SavedPaper;
+  index?: number;
   onExplore: (paper: Paper) => void;
   onRemove: (paperId: string) => void;
   onStatusChange: (paperId: string, status: ReviewStatus) => void;
@@ -23,6 +24,7 @@ type Editing = "folder" | "tags" | "note" | null;
 
 export function CollectionRow({
   entry,
+  index = 0,
   onExplore,
   onRemove,
   onStatusChange,
@@ -46,7 +48,10 @@ export function CollectionRow({
   };
 
   return (
-    <article className="collection-row">
+    <article
+      className="collection-row"
+      style={{ ["--i" as string]: Math.min(index, 9) }}
+    >
       <div className="collection-row-head">
         <button
           type="button"

@@ -130,8 +130,11 @@ function ListColumn({
         </p>
       ) : (
         <ol className="paper-list">
-          {shown.map((paper) => (
-            <li key={paper.id}>
+          {shown.map((paper, index) => (
+            <li
+              key={paper.id}
+              style={{ ["--i" as string]: index % PREVIEW_COUNT }}
+            >
               <button
                 type="button"
                 className={`paper-row${paper.id === selectedId ? " active" : ""}`}

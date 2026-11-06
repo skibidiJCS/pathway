@@ -68,7 +68,7 @@ export function CitationTimeline({
       entry.citedBy.sort(byCitations);
     }
     const tallest = (key: "cites" | "citedBy") =>
-      Math.max(1, ...[...columns.values()].map((entry) => entry[key].length));
+      Math.max(3, ...[...columns.values()].map((entry) => entry[key].length));
     const step = tickStep(span);
     const ticks: number[] = [];
     for (let year = Math.ceil(min / step) * step; year <= max; year += step) {
@@ -91,6 +91,10 @@ export function CitationTimeline({
     references.filter((paper) => paper.year === null).length +
     citing.filter((paper) => paper.year === null).length;
 
+  // Blocks grow out of the line from left to right, a beat apart.
+  const delay = (year: number, index: number) =>
+    `${Math.round(200 + ((year - layout.min) / layout.span) * 500 + index * 25)}ms`;
+
   const block = (paper: Paper, kind: "cites" | "cited-by", index: number) => (
     <button
       key={paper.id}
@@ -98,8 +102,14 @@ export function CitationTimeline({
       className={`timeline-block ${kind}${paper.id === selectedId ? " active" : ""}`}
       style={
         kind === "cites"
-          ? { bottom: PAD + index * (CELL + GAP) }
-          : { top: PAD + index * (CELL + GAP) }
+          ? {
+              bottom: PAD + index * (CELL + GAP),
+              animationDelay: delay(paper.year ?? layout.min, index),
+            }
+          : {
+              top: PAD + index * (CELL + GAP),
+              animationDelay: delay(paper.year ?? layout.min, index),
+            }
       }
       onClick={() => onSelect(paper)}
       title={`${paper.title}, ${paper.year}`}
@@ -110,13 +120,20 @@ export function CitationTimeline({
   return (
     <figure className="timeline">
       <figcaption className="timeline-caption">
-        Each block is one paper, placed by the year it was published
+        <span>Each block is one paper, placed by the year it was published</span>
+        <span className="timeline-key">
+          <span>
+            <i className="swatch cites" aria-hidden />
+            Papers it cites <b className="tabular">{references.length}</b>
+          </span>
+          <span>
+            <i className="swatch cited-by" aria-hidden />
+            Papers citing it <b className="tabular">{citing.length}</b>
+          </span>
+        </span>
       </figcaption>
       <div className="timeline-chart">
         <div className="timeline-half above" style={{ height: layout.above }}>
-          <span className="timeline-side-label">
-            Papers it cites <span className="tabular">{references.length}</span>
-          </span>
           {layout.columns.map((entry) =>
             entry.cites.length ? (
               <div
@@ -131,9 +148,6 @@ export function CitationTimeline({
         </div>
         <div className="timeline-axis" />
         <div className="timeline-half below" style={{ height: layout.below }}>
-          <span className="timeline-side-label">
-            Papers citing it <span className="tabular">{citing.length}</span>
-          </span>
           {layout.columns.map((entry) =>
             entry.citedBy.length ? (
               <div

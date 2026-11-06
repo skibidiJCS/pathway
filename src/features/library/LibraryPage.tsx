@@ -247,8 +247,9 @@ export function LibraryPage({
               ))}
             </datalist>
             <div className="collection-list">
-              {visible.map((entry) => (
+              {visible.map((entry, index) => (
                 <CollectionRow
+                  index={index}
                   key={entry.paper.id}
                   entry={entry}
                   onExplore={onExplore}

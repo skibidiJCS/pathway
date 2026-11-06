@@ -721,7 +721,14 @@ input.search-input:focus-visible {
   overflow-y: auto;
   background: var(--surface);
   box-shadow: var(--shadow-float);
-  animation: rise 220ms var(--ease);
+  animation:
+    reveal-down 340ms var(--ease) backwards,
+    fade-in 200ms linear backwards;
+}
+
+.result-list li {
+  animation: fade-rise 360ms var(--ease) backwards;
+  animation-delay: calc(80ms + var(--i, 0) * 40ms);
 }
 
 .results-header {
@@ -787,32 +794,58 @@ input.search-input:focus-visible {
 /* Hero chart: a small, true picture of the paper page. */
 .hero-chart {
   margin: 0 0 40px;
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-}
-
-.hero-chart-label {
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 16px;
 }
 
 .hero-chart-plot {
   position: relative;
-  display: flex;
-  align-items: stretch;
+  display: inline-flex;
   gap: 6px;
+  padding: 24px 56px 24px 0;
 }
 
+/* The time line itself. */
 .hero-chart-plot::before {
   content: "";
   position: absolute;
-  left: -8px;
-  right: -8px;
+  left: 0;
+  right: 0;
   top: 50%;
   height: 1px;
   background: var(--line-strong);
+}
+
+.hero-label,
+.hero-end {
+  position: absolute;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.hero-label.cites {
+  top: 0;
+  left: 0;
+}
+
+.hero-label.cited-by {
+  bottom: 0;
+  right: 56px;
+  color: var(--ink);
+}
+
+.hero-end {
+  color: var(--text-3);
+}
+
+.hero-end.earlier {
+  left: 0;
+  top: calc(50% + 6px);
+}
+
+.hero-end.later {
+  right: 0;
+  bottom: calc(50% + 6px);
 }
 
 .hero-column {
@@ -821,7 +854,6 @@ input.search-input:focus-visible {
   display: grid;
   grid-template-rows: 58px 58px;
   row-gap: 12px;
-  animation: rise 500ms var(--ease) backwards;
 }
 
 .hero-stack {
@@ -837,10 +869,17 @@ input.search-input:focus-visible {
 .hero-stack span {
   height: 8px;
   background: var(--text-3);
+  animation: grow 420ms var(--ease) backwards;
+  animation-delay: calc(200ms + var(--col, 0) * 45ms + var(--row, 0) * 30ms);
+}
+
+.hero-stack.above span {
+  transform-origin: bottom;
 }
 
 .hero-stack.below span {
   background: var(--ink);
+  transform-origin: top;
 }
 
 .hero-column.center::after {
@@ -851,6 +890,7 @@ input.search-input:focus-visible {
   bottom: -6px;
   width: 2px;
   background: var(--spark);
+  animation: grow 500ms var(--ease) 100ms backwards;
 }
 
 .hero-center-label {
@@ -861,6 +901,12 @@ input.search-input:focus-visible {
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.hero-chart figcaption {
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: 12px;
 }
 
 .home-title {
@@ -950,7 +996,40 @@ input.search-input:focus-visible {
   max-width: 1120px;
   margin: 0 auto;
   padding: 32px 40px 96px;
-  animation: rise 300ms var(--ease);
+}
+
+/* Entrances: one ease, short steps, nothing travels more than 8px. */
+.center-card > * {
+  animation: fade-rise 420ms var(--ease) backwards;
+}
+
+.center-card > :nth-child(2) { animation-delay: 50ms; }
+.center-card > :nth-child(3) { animation-delay: 100ms; }
+.center-card > :nth-child(4) { animation-delay: 150ms; }
+.center-card > :nth-child(5) { animation-delay: 200ms; }
+
+.neighborhood {
+  animation: fade-in 400ms linear 150ms backwards;
+}
+
+.paper-list li,
+.paper-link-list li,
+.collection-row {
+  animation: fade-rise 360ms var(--ease) backwards;
+  animation-delay: calc(250ms + var(--i, 0) * 40ms);
+}
+
+.paper-link-list li,
+.collection-row {
+  animation-delay: calc(100ms + var(--i, 0) * 40ms);
+}
+
+.trail li.current {
+  animation: fade-rise 360ms var(--ease) backwards;
+}
+
+.preview-content {
+  animation: fade-in 240ms linear backwards;
 }
 
 @media (min-width: 1024px) {
@@ -1187,8 +1266,37 @@ input.year-input {
 }
 
 .timeline-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
   color: var(--text-2);
   font-size: 13px;
+}
+
+.timeline-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+.timeline-key b {
+  margin-left: 2px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 8px;
+  margin-right: 8px;
+  vertical-align: 0;
+  background: var(--text-3);
+}
+
+.swatch.cited-by {
+  background: var(--ink);
 }
 
 .timeline-chart {
@@ -1199,29 +1307,6 @@ input.year-input {
 
 .timeline-half {
   position: relative;
-}
-
-.timeline-side-label {
-  position: absolute;
-  left: 0;
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-}
-
-.timeline-half.above .timeline-side-label {
-  top: 0;
-}
-
-.timeline-half.below .timeline-side-label {
-  bottom: 0;
-}
-
-.timeline-side-label .tabular {
-  margin-left: 4px;
-  color: var(--text);
-  font-weight: 600;
 }
 
 .timeline-axis {
@@ -1242,6 +1327,7 @@ input.year-input {
   right: 0;
   height: 8px;
   padding: 0;
+  animation: grow 380ms var(--ease) backwards;
   transition:
     background-color var(--fast) var(--ease),
     transform var(--fast) var(--ease);
@@ -1249,6 +1335,11 @@ input.year-input {
 
 .timeline-block.cites {
   background: var(--text-3);
+  transform-origin: bottom;
+}
+
+.timeline-block.cited-by {
+  transform-origin: top;
 }
 
 .timeline-block.cited-by {
@@ -1270,6 +1361,8 @@ input.year-input {
   margin-left: -1px;
   background: var(--spark);
   pointer-events: none;
+  transform-origin: center;
+  animation: grow 500ms var(--ease) 100ms backwards;
 }
 
 .timeline-center-label {
@@ -2062,6 +2155,32 @@ input.year-input {
   }
 }
 
+@keyframes grow {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes reveal-down {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -2166,6 +2285,19 @@ input.year-input {
     padding: 32px 20px 64px;
   }
 
+
+  .hero-chart-plot {
+    gap: 5px;
+    padding-right: 48px;
+  }
+
+  .hero-column {
+    width: 12px;
+  }
+
+  .hero-label.cited-by {
+    right: 48px;
+  }
 
   .home-title {
     font-size: 30px;
